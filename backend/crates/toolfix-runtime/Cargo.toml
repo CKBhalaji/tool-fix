@@ -1,0 +1,15 @@
+[package]
+name = "toolfix-runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+toolfix-jobs = { workspace = true }
+toolfix-notifications = { workspace = true }
+toolfix-persistence = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }

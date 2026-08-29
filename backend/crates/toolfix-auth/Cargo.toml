@@ -1,0 +1,24 @@
+[package]
+name = "toolfix-auth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+toolfix-contracts = { workspace = true }
+toolfix-persistence = { workspace = true }
+axum = { workspace = true }
+base64 = { workspace = true }
+chrono = { workspace = true }
+cookie = { workspace = true }
+hex = { workspace = true }
+jsonwebtoken = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }

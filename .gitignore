@@ -1,0 +1,35 @@
+# ---- secrets & environment (never commit) ----
+backend/secrets/
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+!frontend/.env.example
+
+# ---- rust / cargo ----
+backend/target/
+**/*.rs.bk
+
+# ---- node / next.js ----
+node_modules/
+frontend/.next/
+frontend/out/
+next-env.d.ts
+*.tsbuildinfo
+.eslintcache
+
+# ---- runtime data ----
+*.log
+*.db
+*.sqlite
+logs/
+uploads/
+backend/storage/
+
+# ---- os / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

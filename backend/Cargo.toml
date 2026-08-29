@@ -1,0 +1,79 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/toolfix-contracts",
+    "crates/toolfix-domain",
+    "crates/toolfix-auth",
+    "crates/toolfix-persistence",
+    "crates/toolfix-location",
+    "crates/toolfix-notifications",
+    "crates/toolfix-storage",
+    "crates/toolfix-payments",
+    "crates/toolfix-matching",
+    "crates/toolfix-pricing",
+    "crates/toolfix-agent",
+    "crates/toolfix-jobs",
+    "crates/toolfix-runtime",
+    "crates/toolfix-api",
+    "crates/toolfix-server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "proprietary"
+
+[workspace.dependencies]
+# internal crates (dependency direction: contracts -> domain ->
+# {auth, persistence, location, notifications, storage, payments} ->
+# {matching, pricing, agent} -> jobs -> runtime -> api -> server)
+toolfix-contracts = { path = "crates/toolfix-contracts" }
+toolfix-domain = { path = "crates/toolfix-domain" }
+toolfix-auth = { path = "crates/toolfix-auth" }
+toolfix-persistence = { path = "crates/toolfix-persistence" }
+toolfix-location = { path = "crates/toolfix-location" }
+toolfix-notifications = { path = "crates/toolfix-notifications" }
+toolfix-storage = { path = "crates/toolfix-storage" }
+toolfix-payments = { path = "crates/toolfix-payments" }
+toolfix-matching = { path = "crates/toolfix-matching" }
+toolfix-pricing = { path = "crates/toolfix-pricing" }
+toolfix-agent = { path = "crates/toolfix-agent" }
+toolfix-jobs = { path = "crates/toolfix-jobs" }
+toolfix-runtime = { path = "crates/toolfix-runtime" }
+toolfix-api = { path = "crates/toolfix-api" }
+toolfix-server = { path = "crates/toolfix-server" }
+
+# third party
+async-trait = "0.1"
+axum = { version = "0.8", features = ["http1", "json", "tokio", "query", "ws", "multipart", "matched-path", "original-uri"] }
+base64 = "0.22"
+bytes = "1"
+chrono = { version = "0.4", features = ["serde"] }
+cookie = "0.18"
+dotenvy = "0.15"
+futures = "0.3"
+hex = "0.4"
+jsonwebtoken = "9"
+rand = "0.9"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "http2", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json", "macros", "migrate"] }
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "net", "signal"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "timeout", "limit", "trace", "request-id"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 16
+
+[profile.dev]
+opt-level = 0
+debug = 1

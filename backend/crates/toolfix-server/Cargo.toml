@@ -1,0 +1,33 @@
+[package]
+name = "toolfix-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "toolfix-server"
+path = "src/main.rs"
+
+[dependencies]
+toolfix-agent = { workspace = true }
+toolfix-api = { workspace = true }
+toolfix-auth = { workspace = true }
+toolfix-contracts = { workspace = true }
+toolfix-jobs = { workspace = true }
+toolfix-matching = { workspace = true }
+toolfix-notifications = { workspace = true }
+toolfix-payments = { workspace = true }
+toolfix-persistence = { workspace = true }
+toolfix-pricing = { workspace = true }
+toolfix-runtime = { workspace = true }
+toolfix-storage = { workspace = true }
+axum = { workspace = true }
+chrono = { workspace = true }
+dotenvy = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+uuid = { workspace = true }
