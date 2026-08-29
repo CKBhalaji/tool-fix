@@ -1,14 +1,15 @@
 //! Deterministic mechanic matching.
 //!
 //! Pure business logic — no LLM anywhere in this crate. Pipeline:
-//! bounding-box search -> exact distance -> availability/capability
-//! filters -> deterministic ranking -> notify top-N.
+//! bounding-box search -> exact haversine distance (computed here, keeping
+//! SQL dialect-neutral) -> availability/capability filters ->
+//! deterministic ranking -> notify top-N.
 
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use toolfix_contracts::{RepairCategory, VehicleKind};
-use toolfix_persistence::models::MechanicCandidateRow;
+use toolfix_persistence::models::MechanicRow;
 use toolfix_persistence::repositories::{Mechanics, Notifications};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,11 +76,11 @@ pub fn rank_score(
     0.55 * distance_score + 0.25 * rating_score + 0.10 * experience_score + 0.10 * load_score
 }
 
-/// Filters and ranks raw candidate rows (pure function, unit-tested here).
-/// A `None` category means the fault is unknown — mechanics are matched by
-/// proximity and vehicle alone.
+/// Filters and ranks `(mechanic, distance)` pairs (pure function, tested
+/// here). A `None` category means the fault is unknown — mechanics are
+/// matched by proximity and vehicle alone.
 pub fn rank_candidates(
-    candidates: Vec<MechanicCandidateRow>,
+    candidates: Vec<(MechanicRow, f64)>,
     vehicle_kind: Option<VehicleKind>,
     category: Option<RepairCategory>,
     avg_speed_kmh: f64,
@@ -88,26 +89,26 @@ pub fn rank_candidates(
 ) -> Vec<RankedMechanic> {
     let mut ranked: Vec<RankedMechanic> = candidates
         .into_iter()
-        .filter_map(|row| {
+        .filter_map(|(row, distance_m)| {
             let mechanic = toolfix_domain::mechanic::Mechanic {
-                id: row.mechanic.id,
-                user_id: row.mechanic.user_id,
-                display_name: row.mechanic.display_name.clone(),
-                phone: row.mechanic.phone.clone(),
-                city: row.mechanic.city.clone(),
-                service_area_km: row.mechanic.service_area_km as f64,
-                supported_vehicle_kinds: row.mechanic.vehicle_kinds().ok()?,
-                repair_categories: row.mechanic.categories().ok()?,
-                experience_years: row.mechanic.experience_years.map(i32::from),
-                availability_status: row.mechanic.availability().ok()?,
-                rating_average: row.mechanic.rating_average.map(f64::from),
-                completed_jobs: row.mechanic.completed_jobs,
-                is_verified: row.mechanic.is_verified,
-                current_latitude: row.mechanic.current_latitude,
-                current_longitude: row.mechanic.current_longitude,
-                location_updated_at: row.mechanic.location_updated_at,
-                created_at: row.mechanic.created_at,
-                updated_at: row.mechanic.updated_at,
+                id: row.id,
+                user_id: row.user_id,
+                display_name: row.display_name.clone(),
+                phone: row.phone.clone(),
+                city: row.city.clone(),
+                service_area_km: row.service_area_km as f64,
+                supported_vehicle_kinds: row.vehicle_kinds().ok()?,
+                repair_categories: row.categories().ok()?,
+                experience_years: row.experience_years.map(i32::from),
+                availability_status: row.availability().ok()?,
+                rating_average: row.rating_average.map(f64::from),
+                completed_jobs: row.completed_jobs,
+                is_verified: row.is_verified,
+                current_latitude: row.current_latitude,
+                current_longitude: row.current_longitude,
+                location_updated_at: row.location_updated_at,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
             };
 
             if mechanic.availability_status == toolfix_contracts::AvailabilityStatus::Offline {
@@ -115,9 +116,7 @@ pub fn rank_candidates(
             }
             // The mechanic must be able to reach the job within their own
             // declared service area.
-            if mechanic.service_area_km > 0.0
-                && row.distance_m > mechanic.service_area_km * 1_000.0
-            {
+            if mechanic.service_area_km > 0.0 && distance_m > mechanic.service_area_km * 1_000.0 {
                 return None;
             }
             if let Some(category) = category
@@ -133,16 +132,16 @@ pub fn rank_candidates(
                 return None;
             }
 
-            let eta = toolfix_location::eta_minutes(row.distance_m, avg_speed_kmh);
+            let eta = toolfix_location::eta_minutes(distance_m, avg_speed_kmh);
             let score = rank_score(
-                row.distance_m,
+                distance_m,
                 mechanic.rating_average,
                 mechanic.completed_jobs,
                 active,
             );
             Some(RankedMechanic {
                 mechanic_id: mechanic.id,
-                distance_m: row.distance_m,
+                distance_m,
                 eta_minutes: eta,
                 rating: mechanic.rating_average,
                 completed_jobs: mechanic.completed_jobs,
@@ -197,46 +196,48 @@ impl MatchingService {
         vehicle_kind: Option<VehicleKind>,
         category: Option<RepairCategory>,
     ) -> Result<Vec<RankedMechanic>, MatchingError> {
+        let center = toolfix_contracts::LatLng::new(breakdown.latitude, breakdown.longitude)
+            .map_err(|e| {
+                MatchingError::Database(toolfix_persistence::PersistenceError::InvalidData(e))
+            })?;
         let max_radius = self
             .config
             .radius_stages_m
             .iter()
             .copied()
             .fold(0.0_f64, f64::max);
-        let center = toolfix_contracts::LatLng::new(breakdown.latitude, breakdown.longitude)
-            .map_err(|e| {
-                MatchingError::Database(toolfix_persistence::PersistenceError::InvalidData(e))
-            })?;
         let (min_lat, max_lat, min_lng, max_lng) =
             toolfix_location::bounding_box(center, max_radius);
 
-        // Fetch once for the largest radius; stage expansion is applied
-        // against the ranked result to keep behavior deterministic.
-        let candidates = self
+        // Bounding-box pre-filter in SQL; exact distance in Rust.
+        let rows = self
             .mechanics
-            .find_candidates_in_box(
-                breakdown.latitude,
-                breakdown.longitude,
-                min_lat,
-                max_lat,
-                min_lng,
-                max_lng,
-                max_radius,
-                200,
-            )
+            .find_online_in_box(min_lat, max_lat, min_lng, max_lng, 200)
             .await?;
 
         let mut active_jobs = std::collections::HashMap::new();
-        for candidate in &candidates {
-            let count = self
-                .mechanics
-                .count_active_jobs(candidate.mechanic.id)
-                .await?;
-            active_jobs.insert(candidate.mechanic.id, count);
+        let mut with_distance: Vec<(MechanicRow, f64)> = Vec::with_capacity(rows.len());
+        for row in rows {
+            let Some(lat) = row.current_latitude else {
+                continue;
+            };
+            let Some(lng) = row.current_longitude else {
+                continue;
+            };
+            let Ok(point) = toolfix_contracts::LatLng::new(lat, lng) else {
+                continue;
+            };
+            let distance = toolfix_location::haversine_distance_m(center, point);
+            if distance > max_radius {
+                continue;
+            }
+            let count = self.mechanics.count_active_jobs(row.id).await?;
+            active_jobs.insert(row.id, count);
+            with_distance.push((row, distance));
         }
 
         let ranked = rank_candidates(
-            candidates,
+            with_distance,
             vehicle_kind,
             category,
             self.config.avg_speed_kmh,
@@ -324,5 +325,90 @@ impl MatchingService {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+    use toolfix_contracts::{AvailabilityStatus, RepairCategory, VehicleKind};
+
+    fn mechanic_row(
+        id: uuid::Uuid,
+        kinds: &[VehicleKind],
+        categories: &[RepairCategory],
+    ) -> MechanicRow {
+        MechanicRow {
+            id,
+            user_id: uuid::Uuid::now_v7(),
+            display_name: Some("M".into()),
+            phone: None,
+            city: None,
+            service_area_km: 10.0,
+            supported_vehicle_kinds: serde_json::to_string(
+                &kinds.iter().map(|k| k.as_str().to_string()).collect::<Vec<_>>(),
+            )
+            .unwrap(),
+            repair_categories: serde_json::to_string(
+                &categories.iter().map(|c| c.as_str().to_string()).collect::<Vec<_>>(),
+            )
+            .unwrap(),
+            experience_years: None,
+            availability_status: AvailabilityStatus::Online.as_str().to_string(),
+            rating_average: Some(4.0),
+            completed_jobs: 100,
+            is_verified: true,
+            current_latitude: None,
+            current_longitude: None,
+            location_updated_at: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        }
+    }
+
+    #[test]
+    fn closer_mechanic_ranks_first_and_capability_filters_apply() {
+        let near = mechanic_row(uuid::Uuid::now_v7(), &[VehicleKind::Scooter], &[RepairCategory::Battery]);
+        let far = mechanic_row(uuid::Uuid::now_v7(), &[VehicleKind::Scooter], &[RepairCategory::Battery]);
+        let wrong = mechanic_row(uuid::Uuid::now_v7(), &[VehicleKind::Car], &[RepairCategory::Engine]);
+
+        let candidates = vec![(far, 8_000.0), (near.clone(), 500.0), (wrong, 300.0)];
+        let ranked = rank_candidates(
+            candidates,
+            Some(VehicleKind::Scooter),
+            Some(RepairCategory::Battery),
+            25.0,
+            3,
+            &std::collections::HashMap::new(),
+        );
+
+        assert_eq!(ranked.len(), 2, "incompatible mechanic must be filtered");
+        assert_eq!(ranked[0].mechanic_id, near.id, "closer mechanic ranks first");
+        assert!(ranked[0].score > ranked[1].score);
+    }
+
+    #[test]
+    fn unknown_category_matches_by_proximity_only() {
+        let any = mechanic_row(uuid::Uuid::now_v7(), &[], &[]);
+        let ranked = rank_candidates(
+            vec![(any.clone(), 1_200.0)],
+            None,
+            None,
+            25.0,
+            3,
+            &std::collections::HashMap::new(),
+        );
+        assert_eq!(ranked.len(), 1);
+        assert_eq!(ranked[0].mechanic_id, any.id);
+    }
+
+    #[test]
+    fn mechanics_over_the_active_job_cap_are_excluded() {
+        let m = mechanic_row(uuid::Uuid::now_v7(), &[VehicleKind::Scooter], &[RepairCategory::Battery]);
+        let mut active = std::collections::HashMap::new();
+        active.insert(m.id, 5);
+        let ranked = rank_candidates(vec![(m, 500.0)], None, None, 25.0, 3, &active);
+        assert!(ranked.is_empty());
     }
 }

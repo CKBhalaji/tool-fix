@@ -18,7 +18,7 @@ CREATE INDEX agent_runs_breakdown_id_idx ON agent_runs (breakdown_id, created_at
 CREATE TABLE agent_outputs (
     id           UUID PRIMARY KEY,
     agent_run_id UUID NOT NULL REFERENCES agent_runs (id) ON DELETE CASCADE,
-    output       JSONB NOT NULL,
+    output       TEXT NOT NULL,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

@@ -1,40 +1,47 @@
 //! Mechanics repository, including the geo candidate query used by matching.
+//!
+//! Candidate search is a bounding-box + capability pre-filter; exact
+//! haversine distance is computed in Rust (`toolfix_location`) so the SQL
+//! stays dialect-neutral (SQLite has no trig functions).
 
 use chrono::{DateTime, Utc};
-use sqlx::PgPool;
-use toolfix_contracts::{AvailabilityStatus, RepairCategory, VehicleKind};
 use uuid::Uuid;
 
 use crate::error::PersistenceError;
-use crate::models::{MechanicCandidateRow, MechanicRow};
+use crate::models::MechanicRow;
+use crate::{dual, dual_tx, Db};
+use toolfix_contracts::{AvailabilityStatus, RepairCategory, VehicleKind};
 
 #[derive(Clone)]
 pub struct Mechanics {
-    pool: PgPool,
+    db: Db,
 }
 
 impl Mechanics {
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool }
+    pub fn new(db: Db) -> Self {
+        Self { db }
     }
 
     pub async fn find_by_user_id(&self, user_id: Uuid) -> Result<MechanicRow, PersistenceError> {
-        sqlx::query_as::<_, MechanicRow>("SELECT * FROM mechanics WHERE user_id = $1")
-            .bind(user_id)
-            .fetch_optional(&self.pool)
-            .await?
-            .ok_or(PersistenceError::NotFound)
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, MechanicRow>("SELECT * FROM mechanics WHERE user_id = $1")
+                .bind(user_id)
+                .fetch_one(e)
+                .await
+        )?)
     }
 
     /// Resolves the login user behind a mechanic profile.
     pub async fn user_id_of(&self, mechanic_id: Uuid) -> Result<Uuid, PersistenceError> {
-        let (user_id,): (Uuid,) =
-            sqlx::query_as("SELECT user_id FROM mechanics WHERE id = $1")
+        let row: (Uuid,) = dual!(
+            &self.db,
+            |e| sqlx::query_as("SELECT user_id FROM mechanics WHERE id = $1")
                 .bind(mechanic_id)
-                .fetch_optional(&self.pool)
-                .await?
-                .ok_or(PersistenceError::NotFound)?;
-        Ok(user_id)
+                .fetch_one(e)
+                .await
+        )?;
+        Ok(row.0)
     }
 
     /// Mechanic profiles are created lazily on first onboarding.
@@ -50,36 +57,51 @@ impl Mechanics {
         repair_categories: &[RepairCategory],
         experience_years: Option<i16>,
     ) -> Result<MechanicRow, PersistenceError> {
-        let kinds: Vec<String> = supported_vehicle_kinds.iter().map(|k| k.as_str().to_string()).collect();
-        let categories: Vec<String> = repair_categories.iter().map(|c| c.as_str().to_string()).collect();
-        sqlx::query_as::<_, MechanicRow>(
-            r#"
-            INSERT INTO mechanics (id, user_id, display_name, phone, city, service_area_km,
-                                   supported_vehicle_kinds, repair_categories, experience_years)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            ON CONFLICT (user_id) DO UPDATE
-                SET display_name = COALESCE(EXCLUDED.display_name, mechanics.display_name),
-                    phone = COALESCE(EXCLUDED.phone, mechanics.phone),
-                    city = COALESCE(EXCLUDED.city, mechanics.city),
-                    service_area_km = COALESCE(EXCLUDED.service_area_km, mechanics.service_area_km),
-                    supported_vehicle_kinds = EXCLUDED.supported_vehicle_kinds,
-                    repair_categories = EXCLUDED.repair_categories,
-                    experience_years = COALESCE(EXCLUDED.experience_years, mechanics.experience_years),
-                    updated_at = now()
-            RETURNING *
-            "#,
-        )
-        .bind(Uuid::now_v7())
-        .bind(user_id)
-        .bind(display_name)
-        .bind(phone)
-        .bind(city)
-        .bind(service_area_km as f32)
-        .bind(&kinds)
-        .bind(&categories)
-        .bind(experience_years)
-        .fetch_one(&self.pool)
-        .await.map_err(crate::PersistenceError::from)
+        let kinds = crate::list_to_json(
+            &supported_vehicle_kinds
+                .iter()
+                .map(|k| k.as_str().to_string())
+                .collect::<Vec<String>>(),
+        );
+        let categories = crate::list_to_json(
+            &repair_categories
+                .iter()
+                .map(|c| c.as_str().to_string())
+                .collect::<Vec<String>>(),
+        );
+        let now = Utc::now();
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, MechanicRow>(
+                r#"
+                INSERT INTO mechanics (id, user_id, display_name, phone, city, service_area_km,
+                                       supported_vehicle_kinds, repair_categories, experience_years, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
+                ON CONFLICT (user_id) DO UPDATE
+                    SET display_name = COALESCE(EXCLUDED.display_name, mechanics.display_name),
+                        phone = COALESCE(EXCLUDED.phone, mechanics.phone),
+                        city = COALESCE(EXCLUDED.city, mechanics.city),
+                        service_area_km = COALESCE(EXCLUDED.service_area_km, mechanics.service_area_km),
+                        supported_vehicle_kinds = EXCLUDED.supported_vehicle_kinds,
+                        repair_categories = EXCLUDED.repair_categories,
+                        experience_years = COALESCE(EXCLUDED.experience_years, mechanics.experience_years),
+                        updated_at = $10
+                RETURNING *
+                "#,
+            )
+            .bind(Uuid::now_v7())
+            .bind(user_id)
+            .bind(display_name)
+            .bind(phone)
+            .bind(city)
+            .bind(service_area_km as f32)
+            .bind(kinds)
+            .bind(categories)
+            .bind(experience_years)
+            .bind(now)
+            .fetch_one(e)
+            .await
+        )?)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -93,34 +115,40 @@ impl Mechanics {
         repair_categories: Option<&[RepairCategory]>,
         experience_years: Option<i16>,
     ) -> Result<MechanicRow, PersistenceError> {
-        let kinds = supported_vehicle_kinds
-            .map(|ks| ks.iter().map(|k| k.as_str().to_string()).collect::<Vec<String>>());
-        let categories = repair_categories
-            .map(|cs| cs.iter().map(|c| c.as_str().to_string()).collect::<Vec<String>>());
-        sqlx::query_as::<_, MechanicRow>(
-            r#"
-            UPDATE mechanics
-               SET display_name = COALESCE($2, display_name),
-                   city = COALESCE($3, city),
-                   service_area_km = COALESCE($4, service_area_km),
-                   supported_vehicle_kinds = COALESCE($5, supported_vehicle_kinds),
-                   repair_categories = COALESCE($6, repair_categories),
-                   experience_years = COALESCE($7, experience_years),
-                   updated_at = now()
-             WHERE id = $1
-            RETURNING *
-            "#,
-        )
-        .bind(mechanic_id)
-        .bind(display_name)
-        .bind(city)
-        .bind(service_area_km.map(|v| v as f32))
-        .bind(kinds.as_ref())
-        .bind(categories.as_ref())
-        .bind(experience_years)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(PersistenceError::NotFound)
+        let kinds = supported_vehicle_kinds.map(|ks| {
+            crate::list_to_json(&ks.iter().map(|k| k.as_str().to_string()).collect::<Vec<String>>())
+        });
+        let categories = repair_categories.map(|cs| {
+            crate::list_to_json(&cs.iter().map(|c| c.as_str().to_string()).collect::<Vec<String>>())
+        });
+        let now = Utc::now();
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, MechanicRow>(
+                r#"
+                UPDATE mechanics
+                   SET display_name = COALESCE($2, display_name),
+                       city = COALESCE($3, city),
+                       service_area_km = COALESCE($4, service_area_km),
+                       supported_vehicle_kinds = COALESCE($5, supported_vehicle_kinds),
+                       repair_categories = COALESCE($6, repair_categories),
+                       experience_years = COALESCE($7, experience_years),
+                       updated_at = $8
+                 WHERE id = $1
+                RETURNING *
+                "#,
+            )
+            .bind(mechanic_id)
+            .bind(display_name)
+            .bind(city)
+            .bind(service_area_km.map(|v| v as f32))
+            .bind(kinds)
+            .bind(categories)
+            .bind(experience_years)
+            .bind(now)
+            .fetch_one(e)
+            .await
+        )?)
     }
 
     pub async fn set_availability(
@@ -128,14 +156,18 @@ impl Mechanics {
         mechanic_id: Uuid,
         status: AvailabilityStatus,
     ) -> Result<MechanicRow, PersistenceError> {
-        sqlx::query_as::<_, MechanicRow>(
-            "UPDATE mechanics SET availability_status = $2, updated_at = now() WHERE id = $1 RETURNING *",
-        )
-        .bind(mechanic_id)
-        .bind(status.as_str())
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(PersistenceError::NotFound)
+        let now = Utc::now();
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, MechanicRow>(
+                "UPDATE mechanics SET availability_status = $2, updated_at = $3 WHERE id = $1 RETURNING *"
+            )
+            .bind(mechanic_id)
+            .bind(status.as_str())
+            .bind(now)
+            .fetch_one(e)
+            .await
+        )?)
     }
 
     /// Updates current position (fast-path columns + mechanic_locations).
@@ -147,130 +179,162 @@ impl Mechanics {
         accuracy_m: Option<f64>,
         now: DateTime<Utc>,
     ) -> Result<(), PersistenceError> {
-        let mut tx = self.pool.begin().await?;
-        sqlx::query(
-            r#"
-            UPDATE mechanics
-               SET current_latitude = $2, current_longitude = $3, location_updated_at = $4,
-                   updated_at = now()
-             WHERE id = $1
-            "#,
-        )
-        .bind(mechanic_id)
-        .bind(latitude)
-        .bind(longitude)
-        .bind(now)
-        .execute(&mut *tx)
-        .await?;
-        sqlx::query(
-            r#"
-            INSERT INTO mechanic_locations (mechanic_id, latitude, longitude, accuracy_m, updated_at)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (mechanic_id) DO UPDATE
-                SET latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    accuracy_m = EXCLUDED.accuracy_m,
-                    updated_at = EXCLUDED.updated_at
-            "#,
-        )
-        .bind(mechanic_id)
-        .bind(latitude)
-        .bind(longitude)
-        .bind(accuracy_m)
-        .bind(now)
-        .execute(&mut *tx)
-        .await?;
+        let mut tx = self.db.begin().await?;
+        dual_tx!(
+            &mut tx,
+            |e| sqlx::query(
+                r#"
+                UPDATE mechanics
+                   SET current_latitude = $2, current_longitude = $3, location_updated_at = $4,
+                       updated_at = $4
+                 WHERE id = $1
+                "#,
+            )
+            .bind(mechanic_id)
+            .bind(latitude)
+            .bind(longitude)
+            .bind(now)
+            .execute(e)
+            .await
+            .map(|r| r.rows_affected())
+        )?;
+        dual_tx!(
+            &mut tx,
+            |e| sqlx::query(
+                r#"
+                INSERT INTO mechanic_locations (mechanic_id, latitude, longitude, accuracy_m, updated_at)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (mechanic_id) DO UPDATE
+                    SET latitude = EXCLUDED.latitude,
+                        longitude = EXCLUDED.longitude,
+                        accuracy_m = EXCLUDED.accuracy_m,
+                        updated_at = EXCLUDED.updated_at
+                "#,
+            )
+            .bind(mechanic_id)
+            .bind(latitude)
+            .bind(longitude)
+            .bind(accuracy_m)
+            .bind(now)
+            .execute(e)
+            .await
+            .map(|r| r.rows_affected())
+        )?;
         tx.commit().await?;
         Ok(())
     }
 
-    /// Nearby online mechanics inside a bounding box (exact distance
-    /// returned for Rust-side ranking). Candidates are not yet filtered on
-    /// vehicle/repair capability — matching does that.
-    #[allow(clippy::too_many_arguments)]
-    pub async fn find_candidates_in_box(
+    /// Verified, available mechanics with a known position inside a
+    /// bounding box. Exact distance ranking happens in Rust.
+    pub async fn find_online_in_box(
         &self,
-        center_lat: f64,
-        center_lng: f64,
         min_lat: f64,
         max_lat: f64,
         min_lng: f64,
         max_lng: f64,
-        max_radius_m: f64,
         limit: i64,
-    ) -> Result<Vec<MechanicCandidateRow>, PersistenceError> {
-        // Haversine in SQL; bounding box pre-filter keeps the scan small.
-        sqlx::query_as::<_, MechanicCandidateRow>(
-            r#"
-            SELECT m.*,
-                   6371000.0 * acos(least(1.0,
-                       cos(radians($1)) * cos(radians(m.current_latitude)) *
-                       cos(radians(m.current_longitude) - radians($2)) +
-                       sin(radians($1)) * sin(radians(m.current_latitude)))) AS distance_m
-              FROM mechanics m
-             WHERE m.availability_status IN ('online', 'busy')
-               AND m.is_verified
-               AND m.current_latitude IS NOT NULL
-               AND m.current_longitude IS NOT NULL
-               AND m.current_latitude BETWEEN $3 AND $4
-               AND m.current_longitude BETWEEN $5 AND $6
-               AND 6371000.0 * acos(least(1.0,
-                       cos(radians($1)) * cos(radians(m.current_latitude)) *
-                       cos(radians(m.current_longitude) - radians($2)) +
-                       sin(radians($1)) * sin(radians(m.current_latitude)))) <= $7
-             ORDER BY distance_m
-             LIMIT $8
-            "#,
-        )
-        .bind(center_lat)
-        .bind(center_lng)
-        .bind(min_lat)
-        .bind(max_lat)
-        .bind(min_lng)
-        .bind(max_lng)
-        .bind(max_radius_m)
-        .bind(limit)
-        .fetch_all(&self.pool)
-        .await.map_err(crate::PersistenceError::from)
+    ) -> Result<Vec<MechanicRow>, PersistenceError> {
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, MechanicRow>(
+                r#"
+                SELECT m.*
+                  FROM mechanics m
+                 WHERE m.availability_status IN ('online', 'busy')
+                   AND m.is_verified
+                   AND m.current_latitude IS NOT NULL
+                   AND m.current_longitude IS NOT NULL
+                   AND m.current_latitude BETWEEN $1 AND $2
+                   AND m.current_longitude BETWEEN $3 AND $4
+                 LIMIT $5
+                "#,
+            )
+            .bind(min_lat)
+            .bind(max_lat)
+            .bind(min_lng)
+            .bind(max_lng)
+            .bind(limit)
+            .fetch_all(e)
+            .await
+        )?)
     }
 
-    pub async fn count_active_jobs(&self, mechanic_id: Uuid) -> Result<i64, PersistenceError> {
-        let (count,): (i64,) = sqlx::query_as(
-            r#"
-            SELECT COUNT(*)
-              FROM assistance_jobs
-             WHERE selected_mechanic_id = $1
-               AND status IN ('mechanic_selected', 'mechanic_en_route', 'mechanic_arrived',
-                              'repair_in_progress')
-            "#,
-        )
-        .bind(mechanic_id)
-        .fetch_one(&self.pool)
-        .await?;
-        Ok(count)
-    }
-
-    pub async fn bump_completed_jobs(&self, mechanic_id: Uuid) -> Result<(), PersistenceError> {
-        sqlx::query("UPDATE mechanics SET completed_jobs = completed_jobs + 1, updated_at = now() WHERE id = $1")
-            .bind(mechanic_id)
-            .execute(&self.pool)
-            .await?;
+    /// Verification is an admin/operator decision; matching only considers
+    /// verified mechanics.
+    pub async fn set_verified(
+        &self,
+        mechanic_id: Uuid,
+        verified: bool,
+    ) -> Result<(), PersistenceError> {
+        let now = Utc::now();
+        dual!(
+            &self.db,
+            |e| sqlx::query("UPDATE mechanics SET is_verified = $2, updated_at = $3 WHERE id = $1")
+                .bind(mechanic_id)
+                .bind(verified)
+                .bind(now)
+                .execute(e)
+                .await
+                .map(|r| r.rows_affected())
+        )?;
         Ok(())
     }
 
-    /// Recomputes the cached rating average after a new rating.
-    pub async fn refresh_rating(&self, mechanic_id: Uuid) -> Result<(), PersistenceError> {
-        sqlx::query(
-            r#"
-            UPDATE mechanics
-               SET rating_average = sub.avg_score, updated_at = now()
-              FROM (SELECT AVG(score)::REAL AS avg_score FROM ratings WHERE mechanic_id = $1) sub
-             WHERE id = $1
-            "#,
-        )
-        .bind(mechanic_id)
-        .execute(&self.pool)
-        .await?;
+    pub async fn count_active_jobs(&self, mechanic_id: Uuid) -> Result<i64, PersistenceError> {
+        let row: (i64,) = dual!(
+            &self.db,
+            |e| sqlx::query_as(
+                r#"
+                SELECT COUNT(*)
+                  FROM assistance_jobs
+                 WHERE selected_mechanic_id = $1
+                   AND status IN ('mechanic_selected', 'mechanic_en_route', 'mechanic_arrived',
+                                  'repair_in_progress')
+                "#,
+            )
+            .bind(mechanic_id)
+            .fetch_one(e)
+            .await
+        )?;
+        Ok(row.0)
+    }
+
+    pub async fn bump_completed_jobs(&self, mechanic_id: Uuid) -> Result<(), PersistenceError> {
+        let now = Utc::now();
+        dual!(
+            &self.db,
+            |e| sqlx::query(
+                "UPDATE mechanics SET completed_jobs = completed_jobs + 1, updated_at = $2 WHERE id = $1"
+            )
+            .bind(mechanic_id)
+            .bind(now)
+            .execute(e)
+            .await
+            .map(|r| r.rows_affected())
+        )?;
+        Ok(())
+    }
+
+    /// Rating refresh with the computed average supplied by the caller
+    /// (portable across dialects).
+    pub async fn store_rating_average(
+        &self,
+        mechanic_id: Uuid,
+        average: Option<f32>,
+    ) -> Result<(), PersistenceError> {
+        let now = Utc::now();
+        dual!(
+            &self.db,
+            |e| sqlx::query(
+                "UPDATE mechanics SET rating_average = $2, updated_at = $3 WHERE id = $1"
+            )
+            .bind(mechanic_id)
+            .bind(average)
+            .bind(now)
+            .execute(e)
+            .await
+            .map(|r| r.rows_affected())
+        )?;
         Ok(())
     }
 }

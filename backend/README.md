@@ -10,9 +10,13 @@ project.
 ```bash
 cd backend
 cp .env.example .env          # then fill in secrets/paths
-docker compose up postgres -d # from the repo root (or your own PostgreSQL)
-cargo run -p toolfix-server
+cargo run -p toolfix-server   # SQLite dev.db is created automatically
 ```
+
+No external database is required for development: the default driver is
+SQLite and the `dev.db` file (with all migrations) is created at startup.
+For production set `DATABASE_DRIVER=postgres` and a PostgreSQL URL — the
+database is created automatically when missing (see `docs/DATABASE.md`).
 
 The API listens on `http://localhost:8080`:
 

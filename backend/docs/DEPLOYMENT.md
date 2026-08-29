@@ -15,6 +15,11 @@ cp backend/.env.example backend/.env    # fill in secrets/paths first
 docker compose up --build
 ```
 
+Local development without Docker uses SQLite: `DATABASE_DRIVER=sqlite` with
+`DATABASE_URL=sqlite://dev.db?mode=rwc` (default in `.env.example`) — the
+`backend/dev.db` file is created at startup. `docker-compose.yml` overrides
+the driver to PostgreSQL for the container topology.
+
 `backend/.env` is passed to the backend container via `env_file`; compose
 overrides `DATABASE_URL` to point at the `postgres` service. Uploaded media
 lives in the `toolfix_storage` volume.

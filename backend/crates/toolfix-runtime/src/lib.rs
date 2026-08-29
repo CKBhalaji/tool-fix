@@ -119,12 +119,12 @@ impl Runtime {
                                 channel,
                                 title: kind.as_str().replace('_', " "),
                                 body: notification
-                                    .payload
+                                    .payload_json()
                                     .get("description")
                                     .and_then(|v| v.as_str())
                                     .unwrap_or("You have a ToolFix update")
                                     .to_string(),
-                                payload: notification.payload.clone(),
+                                payload: notification.payload_json(),
                             };
                             match provider.send(request).await {
                                 Ok(delivery) => {

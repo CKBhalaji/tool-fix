@@ -22,8 +22,8 @@ async fn health_live() -> StatusCode {
 
 /// Readiness checks the database dependency.
 async fn health_ready(State(state): State<crate::AppState>) -> StatusCode {
-    match state.repos.pool().acquire().await {
-        Ok(_conn) => StatusCode::OK,
+    match state.repos.ping().await {
+        Ok(()) => StatusCode::OK,
         Err(_) => StatusCode::SERVICE_UNAVAILABLE,
     }
 }

@@ -25,6 +25,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
+      DATABASE_DRIVER: postgres
       DATABASE_URL: postgres://toolfix:toolfix@postgres:5432/toolfix
       TOOLFIX_HOST: 0.0.0.0
       TOOLFIX_PORT: "8080"

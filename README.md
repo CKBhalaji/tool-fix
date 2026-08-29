@@ -33,9 +33,13 @@ All Cargo commands run from `backend/`. See `backend/README.md`.
 ```bash
 cd backend
 cp .env.example .env            # then fill in secrets/paths
-docker compose up postgres -d   # from repo root, or your own PostgreSQL
-cargo run -p toolfix-server
+cargo run -p toolfix-server     # SQLite dev.db is created automatically
 ```
+
+Local development uses SQLite by default (`DATABASE_DRIVER=sqlite`, file
+`backend/dev.db`, created at startup). Production uses PostgreSQL
+(`DATABASE_DRIVER=postgres`); the database itself is also created
+automatically when missing. See `backend/docs/DATABASE.md`.
 
 The API listens on `http://localhost:8080` (`/health/live`, `/health/ready`).
 

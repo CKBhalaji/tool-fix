@@ -44,12 +44,12 @@ async fn run() -> Result<(), String> {
     let config = Config::from_env()?;
 
     // 1. Database (connect + migrations).
-    let pool = toolfix_persistence::connect(&config.database_url)
+    let db = toolfix_persistence::connect_with_driver(config.database_driver, &config.database_url)
         .await
         .map_err(|e| format!("database connect/migrate failed: {e}"))?;
-    tracing::info!("database connected and migrations applied");
+    tracing::info!(driver = ?db.driver(), "database connected and migrations applied");
 
-    let repos = Repositories::new(pool.clone());
+    let repos = Repositories::new(db);
 
     // 2. Storage (local FS first; S3-compatible backends plug in here).
     std::fs::create_dir_all(&config.storage_dir)

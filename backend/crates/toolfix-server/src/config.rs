@@ -6,6 +6,7 @@ use toolfix_matching::MatchingConfig;
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub database_driver: toolfix_persistence::DbDriver,
     pub database_url: String,
     pub host: String,
     pub port: u16,
@@ -40,6 +41,31 @@ fn env_parse<T: std::str::FromStr>(key: &str, default: T) -> T {
 impl Config {
     pub fn from_env() -> Result<Self, String> {
         let database_url = env_required("DATABASE_URL")?;
+        // Driver comes from DATABASE_DRIVER when set; otherwise it is
+        // inferred from the URL scheme. The two must agree when both given.
+        let database_driver = match env_str("DATABASE_DRIVER") {
+            Some(value) => {
+                let driver = match value.to_ascii_lowercase().as_str() {
+                    "sqlite" => toolfix_persistence::DbDriver::Sqlite,
+                    "postgres" | "postgresql" => toolfix_persistence::DbDriver::Postgres,
+                    other => {
+                        return Err(format!(
+                            "unknown DATABASE_DRIVER '{other}' (use sqlite|postgres)"
+                        ))
+                    }
+                };
+                let inferred = toolfix_persistence::DbDriver::infer(&database_url)
+                    .map_err(|e| e.to_string())?;
+                if driver != inferred {
+                    return Err(format!(
+                        "DATABASE_DRIVER={value} does not match DATABASE_URL scheme ({database_url})"
+                    ));
+                }
+                driver
+            }
+            None => toolfix_persistence::DbDriver::infer(&database_url)
+                .map_err(|e| e.to_string())?,
+        };
         let host = env_str("TOOLFIX_HOST").unwrap_or_else(|| "0.0.0.0".into());
         let port: u16 = env_parse("TOOLFIX_PORT", 8080);
         let frontend_origin = env_str("FRONTEND_ORIGIN").unwrap_or_else(|| "http://localhost:3000".into());
@@ -135,6 +161,7 @@ impl Config {
         };
 
         Ok(Self {
+            database_driver,
             database_url,
             host,
             port,

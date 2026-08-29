@@ -37,7 +37,7 @@ pub async fn list_notifications(
                 kind,
                 channel,
                 job_id: row.job_id,
-                payload: row.payload,
+                payload: row.payload_json(),
                 status,
                 created_at: row.created_at,
             })

@@ -1,5 +1,9 @@
-//! Database row models. Statuses are stored as TEXT and converted to the
-//! contract enums at this boundary.
+//! Database row models, portable across PostgreSQL and SQLite.
+//!
+//! Column types are restricted to the intersection of both backends
+//! (TEXT, INTEGER/BIGINT, REAL, BOOLEAN). List columns are stored as JSON
+//! text and parsed via accessors; status strings convert to the contract
+//! enums at this boundary.
 
 use chrono::{DateTime, Utc};
 use sqlx::FromRow;
@@ -16,7 +20,11 @@ macro_rules! db_status_helpers {
     ($fn_name:ident, $enum_ty:ty) => {
         fn $fn_name(value: &str) -> Result<$enum_ty, PersistenceError> {
             <$enum_ty>::parse(value).ok_or_else(|| {
-                PersistenceError::InvalidData(format!("unknown {} value: {}", stringify!($enum_ty), value))
+                PersistenceError::InvalidData(format!(
+                    "unknown {} value: {}",
+                    stringify!($enum_ty),
+                    value
+                ))
             })
         }
     };
@@ -97,7 +105,7 @@ impl VehicleRow {
     }
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct MechanicRow {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -105,8 +113,8 @@ pub struct MechanicRow {
     pub phone: Option<String>,
     pub city: Option<String>,
     pub service_area_km: f32,
-    pub supported_vehicle_kinds: Vec<String>,
-    pub repair_categories: Vec<String>,
+    pub supported_vehicle_kinds: String,
+    pub repair_categories: String,
     pub experience_years: Option<i16>,
     pub availability_status: String,
     pub rating_average: Option<f32>,
@@ -124,25 +132,17 @@ impl MechanicRow {
         parse_availability(&self.availability_status)
     }
     pub fn vehicle_kinds(&self) -> Result<Vec<VehicleKind>, PersistenceError> {
-        self.supported_vehicle_kinds
+        crate::list_from_json(&self.supported_vehicle_kinds)
             .iter()
             .map(|s| parse_vehicle_kind(s))
             .collect()
     }
     pub fn categories(&self) -> Result<Vec<RepairCategory>, PersistenceError> {
-        self.repair_categories
+        crate::list_from_json(&self.repair_categories)
             .iter()
             .map(|s| parse_repair_category(s))
             .collect()
     }
-}
-
-/// Mechanic row joined with distance from a search center.
-#[derive(Debug, FromRow)]
-pub struct MechanicCandidateRow {
-    #[sqlx(flatten)]
-    pub mechanic: MechanicRow,
-    pub distance_m: f64,
 }
 
 #[derive(Debug, FromRow)]
@@ -154,9 +154,15 @@ pub struct BreakdownRow {
     pub longitude: f64,
     pub address: Option<String>,
     pub problem_description: String,
-    pub vehicle_symptoms: Vec<String>,
+    pub vehicle_symptoms: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+impl BreakdownRow {
+    pub fn symptoms(&self) -> Vec<String> {
+        crate::list_from_json(&self.vehicle_symptoms)
+    }
 }
 
 #[derive(Debug, FromRow)]
@@ -264,7 +270,7 @@ pub struct OfferRow {
     pub expires_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    // joined
+    // joined (None for single-table queries)
     #[sqlx(default)]
     pub mechanic_name: Option<String>,
     #[sqlx(default)]
@@ -294,7 +300,7 @@ pub struct NotificationRow {
     pub kind: String,
     pub channel: String,
     pub job_id: Option<Uuid>,
-    pub payload: serde_json::Value,
+    pub payload: String,
     pub status: String,
     pub provider: Option<String>,
     pub delivery_detail: Option<String>,
@@ -311,6 +317,9 @@ impl NotificationRow {
     }
     pub fn status(&self) -> Result<NotificationStatus, PersistenceError> {
         parse_notification_status(&self.status)
+    }
+    pub fn payload_json(&self) -> serde_json::Value {
+        serde_json::from_str(&self.payload).unwrap_or(serde_json::Value::Null)
     }
 }
 
@@ -410,7 +419,7 @@ pub struct FeedJobRow {
     pub breakdown_id: Uuid,
     pub vehicle_id: Uuid,
     pub problem_description: String,
-    pub vehicle_symptoms: Vec<String>,
+    pub vehicle_symptoms: String,
     pub latitude: f64,
     pub longitude: f64,
     pub address: Option<String>,
@@ -420,5 +429,8 @@ pub struct FeedJobRow {
 impl FeedJobRow {
     pub fn job_status(&self) -> Result<JobStatus, PersistenceError> {
         parse_job_status(&self.job_status)
+    }
+    pub fn symptoms(&self) -> Vec<String> {
+        crate::list_from_json(&self.vehicle_symptoms)
     }
 }

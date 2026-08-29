@@ -1,7 +1,17 @@
 # Database
 
-PostgreSQL only (no SQLite). Migrations live in `backend/migrations/postgres/`
-and are applied automatically at startup by `toolfix-persistence`.
+Two backends are supported and selected by configuration:
+
+- **SQLite** — local development. `DATABASE_DRIVER=sqlite` with
+  `DATABASE_URL=sqlite://dev.db?mode=rwc`; the database file and its schema
+  are created automatically at startup (no services required).
+- **PostgreSQL** — production. `DATABASE_DRIVER=postgres` with a
+  `postgres://…` URL; when the target database does not exist it is created
+  automatically before migrations are applied.
+
+Migrations live in `backend/migrations/{postgres,sqlite}/` (matching
+schemas, dialect-adjusted) and are applied automatically at startup by
+`toolfix-persistence`.
 
 **Migration rule:** migration files are immutable once applied — SQLx stores
 checksums in `_sqlx_migrations`. Editing an applied migration fails startup
@@ -9,10 +19,14 @@ with `migration N was previously applied but has been modified`; add a new
 numbered migration instead.
 
 Statuses are stored as `TEXT` with `CHECK` constraints (snake_case contract
-enum names). Money is `BIGINT` **paise** (INR minor units) with a `currency`
-column. All timestamps are `TIMESTAMPTZ`. Geographic columns are
-`DOUBLE PRECISION` lat/lng — **no PostGIS**; distance uses haversine in SQL
-with bounding-box pre-filters that indexes can serve.
+enum names). Money is `BIGINT`/`INTEGER` **paise** (INR minor units) with a
+currency column. Timestamps are `TIMESTAMPTZ` (Postgres) / ISO-8601 TEXT
+(SQLite) and are bound from Rust. List columns (vehicle kinds, repair
+categories, symptoms) and JSON payloads are stored as JSON **text** on both
+dialects. Geographic columns are lat/lng — **no PostGIS**: bounding-box
+pre-filters run in SQL and exact haversine distance is computed in Rust
+(`toolfix-location`), keeping all repository SQL dialect-neutral (no
+`FOR UPDATE`, `now()`, `::casts`, or server-side arrays).
 
 ## Migrations
 

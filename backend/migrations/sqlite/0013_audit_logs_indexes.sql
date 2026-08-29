@@ -1,14 +1,14 @@
 -- 0013: audit log and remaining hot indexes.
 
 CREATE TABLE audit_logs (
-    id            UUID PRIMARY KEY,
-    actor_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
+    id            TEXT PRIMARY KEY,
+    actor_user_id TEXT REFERENCES users (id) ON DELETE SET NULL,
     action        TEXT NOT NULL,
     entity_type   TEXT,
-    entity_id     UUID,
+    entity_id     TEXT,
     detail        TEXT,
     ip_address    TEXT,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX audit_logs_created_at_idx ON audit_logs (created_at DESC);

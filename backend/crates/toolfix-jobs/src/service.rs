@@ -193,7 +193,7 @@ impl JobService {
                 vehicle_kind: vehicle.kind().ok(),
                 vehicle_display: Some(vehicle_display(&vehicle)),
                 description: breakdown.problem_description.clone(),
-                symptoms: breakdown.vehicle_symptoms.clone(),
+                symptoms: breakdown.symptoms(),
                 image_base64: image.as_ref().map(|(_, blob)| blob_base64(blob)),
                 image_mime: image.as_ref().map(|(mime, _)| mime.clone()),
             };
@@ -333,18 +333,13 @@ impl JobService {
         let job = self.repos.jobs.find_by_id(job_id).await?;
         let from = job.status()?;
         toolfix_domain::validate_transition(from, to)?;
-        let mut tx = self
-            .repos
-            .pool()
-            .begin()
-            .await
-            .map_err(|e| JobsError::Database(e.into()))?;
+        let mut tx = self.repos.begin().await?;
         let updated = self
             .repos
             .jobs
             .transition_job(&mut tx, job_id, from, to, changed_by, Some(reason))
             .await?;
-        tx.commit().await.map_err(|e| JobsError::Database(e.into()))?;
+        tx.commit().await?;
         Ok(updated)
     }
 
@@ -454,18 +449,13 @@ impl JobService {
         let from = job.status()?;
         toolfix_domain::validate_transition(from, JobStatus::MechanicSelected)?;
 
-        let mut tx = self
-            .repos
-            .pool()
-            .begin()
-            .await
-            .map_err(|e| JobsError::Database(e.into()))?;
+        let mut tx = self.repos.begin().await?;
         let (updated_job, expired) = self
             .repos
             .offers
             .accept_offer_transaction(&mut tx, offer_id, offer.job_id, customer_user_id, from, JobStatus::MechanicSelected)
             .await?;
-        tx.commit().await.map_err(|e| JobsError::Database(e.into()))?;
+        tx.commit().await?;
 
         self.publish(
             offer.job_id,
@@ -830,7 +820,7 @@ impl JobService {
                 job_id: row.job_id,
                 breakdown_id: row.breakdown_id,
                 problem_description: row.problem_description.clone(),
-                vehicle_symptoms: row.vehicle_symptoms.clone(),
+                vehicle_symptoms: row.symptoms(),
                 latitude: row.latitude,
                 longitude: row.longitude,
                 address: row.address.clone(),
@@ -878,7 +868,8 @@ impl JobService {
             }
             Err(err) => return Err(err.into()),
         };
-        self.repos.mechanics.refresh_rating(mechanic_id).await?;
+        let average = self.repos.ratings.average_for_mechanic(mechanic_id).await?;
+        self.repos.mechanics.store_rating_average(mechanic_id, average).await?;
         self.publish(request.job_id, "job.rated", serde_json::json!({ "score": request.score }));
         Ok(rating)
     }

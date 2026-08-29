@@ -44,7 +44,7 @@ impl From<&BreakdownRow> for BreakdownRowView {
             longitude: row.longitude,
             address: row.address.clone(),
             problem_description: row.problem_description.clone(),
-            vehicle_symptoms: row.vehicle_symptoms.clone(),
+            vehicle_symptoms: row.symptoms(),
             created_at: row.created_at,
         }
     }
