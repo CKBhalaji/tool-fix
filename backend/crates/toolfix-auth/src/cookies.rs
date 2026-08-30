@@ -94,6 +94,8 @@ mod tests {
 
     fn config() -> AuthConfig {
         AuthConfig {
+            admin_email: "admin@toolfix.com".into(),
+            admin_password: "toolfix@2026".into(),
             access_secret: "s".into(),
             access_ttl_secs: 900,
             refresh_ttl_secs: 2_592_000,

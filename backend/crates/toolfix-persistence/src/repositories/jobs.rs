@@ -9,7 +9,7 @@ use toolfix_contracts::JobStatus;
 use uuid::Uuid;
 
 use crate::error::PersistenceError;
-use crate::models::{FeedJobRow, JobRow, JobStatusHistoryRow};
+use crate::models::{AdminJobRow, FeedJobRow, JobRow, JobStatusHistoryRow};
 use crate::{dual, dual_tx, Db, DbTx};
 
 const LOCK_SUFFIX_PG: &str = " FOR UPDATE";
@@ -291,6 +291,42 @@ impl Jobs {
             .bind(min_lng)
             .bind(max_lng)
             .bind(since)
+            .bind(limit)
+            .fetch_all(e)
+            .await
+        )?)
+    }
+}
+
+impl Jobs {
+    /// Admin listing: every job joined with its breakdown, customer, and
+    /// selected mechanic.
+    pub async fn list_all_admin(&self, limit: i64) -> Result<Vec<AdminJobRow>, PersistenceError> {
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, AdminJobRow>(
+                r#"
+                SELECT j.id AS job_id,
+                       j.status AS job_status,
+                       j.final_amount_minor,
+                       j.created_at AS job_created_at,
+                       b.id AS breakdown_id,
+                       b.problem_description,
+                       b.latitude,
+                       b.longitude,
+                       c.email AS customer_email,
+                       c.display_name AS customer_name,
+                       m.id AS mechanic_id,
+                       COALESCE(m.display_name, sm.display_name) AS mechanic_name
+                  FROM assistance_jobs j
+                  JOIN breakdowns b ON b.id = j.breakdown_id
+                  JOIN users c ON c.id = j.customer_user_id
+                  LEFT JOIN mechanics m ON m.id = j.selected_mechanic_id
+                  LEFT JOIN users sm ON sm.id = m.user_id
+                 ORDER BY j.created_at DESC
+                 LIMIT $1
+                "#,
+            )
             .bind(limit)
             .fetch_all(e)
             .await

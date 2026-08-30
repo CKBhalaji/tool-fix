@@ -102,6 +102,10 @@ pub fn router(state: AppState, cors: tower_http::cors::CorsLayer) -> Router {
         .route(
             "/requests",
             get(crate::handlers::mechanics::requests),
+        )
+        .route(
+            "/payments",
+            get(crate::handlers::payments_history::my_earnings),
         );
 
     let job_routes = Router::new()
@@ -169,8 +173,33 @@ pub fn router(state: AppState, cors: tower_http::cors::CorsLayer) -> Router {
         post(crate::handlers::agent::diagnose),
     );
 
+    let payment_history_routes = Router::new().route("/", get(crate::handlers::payments_history::my_payments));
+
     let ws_routes =
         Router::new().route("/jobs/{job_id}", get(crate::ws::job_events));
+
+    let admin_routes = Router::new()
+        .route("/login", post(crate::handlers::admin::login))
+        .route("/overview", get(crate::handlers::admin::overview))
+        .route("/users", get(crate::handlers::admin::users))
+        .route(
+            "/users/{user_id}/status",
+            post(crate::handlers::admin::set_user_status),
+        )
+        .route("/mechanics", get(crate::handlers::admin::mechanics))
+        .route(
+            "/mechanics/{mechanic_id}/verify",
+            post(crate::handlers::admin::verify_mechanic),
+        )
+        .route("/jobs", get(crate::handlers::admin::jobs))
+        .route(
+            "/payments",
+            get(crate::handlers::admin::payments),
+        )
+        .route(
+            "/agent-runs",
+            get(crate::handlers::admin::agent_runs),
+        );
 
     Router::new()
         .route("/health/live", get(health_live))
@@ -186,6 +215,8 @@ pub fn router(state: AppState, cors: tower_http::cors::CorsLayer) -> Router {
         .nest("/api/v1/ratings", rating_routes)
         .nest("/api/v1/notifications", notification_routes)
         .nest("/api/v1/agent", agent_routes)
+        .nest("/api/v1/admin", admin_routes)
+        .nest("/api/v1/payments", payment_history_routes)
         .nest("/api/v1/ws", ws_routes)
         .layer(DefaultBodyLimit::max(15 * 1024 * 1024))
         .layer(cors)

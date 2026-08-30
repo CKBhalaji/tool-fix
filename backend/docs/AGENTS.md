@@ -24,11 +24,12 @@ pub trait AgentProvider: Send + Sync {
 }
 ```
 
-Two implementations ship, selected by the `AI_PROVIDER` environment value:
+Three implementations ship, selected by the `AI_PROVIDER` environment value:
 
 | Value | Implementation | Auth |
 |---|---|---|
 | `gemini_api` (default) | `gemini_api.rs` — `generativelanguage.googleapis.com` REST | `GEMINI_API_KEY` |
+| `nvidia` | `nvidia.rs` — NVIDIA NIM (OpenAI-compatible, vision-capable models) | `NVIDIA_API_KEY`, `NVIDIA_MODEL` |
 | `vertex_ai` | `vertex.rs` — Vertex `generateContent` | Service account (`GOOGLE_APPLICATION_CREDENTIALS`), JWT-bearer token exchange, cached |
 
 Both request strict JSON (`response_mime_type: application/json`), tolerate

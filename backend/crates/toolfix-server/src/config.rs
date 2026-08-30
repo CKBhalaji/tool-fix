@@ -20,6 +20,8 @@ pub struct Config {
     pub ai_provider: String,
     pub gemini_api_key: Option<String>,
     pub gemini_model: Option<String>,
+    pub nvidia_api_key: Option<String>,
+    pub nvidia_model: Option<String>,
     pub vertex_project_id: Option<String>,
     pub vertex_location: Option<String>,
     pub vertex_model: Option<String>,
@@ -115,24 +117,35 @@ impl Config {
             }
         };
 
-        // AI provider setup (gemini_api | vertex_ai).
+        // AI provider setup (gemini_api | nvidia | vertex_ai).
         let ai_provider = env_str("AI_PROVIDER").unwrap_or_else(|| "gemini_api".into());
         let gemini_api_key = env_str("GEMINI_API_KEY");
         let gemini_model = env_str("GEMINI_MODEL");
+        let nvidia_api_key = env_str("NVIDIA_API_KEY");
+        let nvidia_model = env_str("NVIDIA_MODEL");
         let vertex_project_id = env_str("VERTEX_PROJECT_ID");
         let vertex_location = env_str("VERTEX_LOCATION");
         let vertex_model = env_str("VERTEX_MODEL");
-        let service_account_json = match env_str("GOOGLE_APPLICATION_CREDENTIALS") {
+        // The Vertex service account may have its own file; when unset, the
+        // shared GOOGLE_APPLICATION_CREDENTIALS is used.
+        let service_account_json = match env_str("VERTEX_SERVICE_ACCOUNT_PATH")
+            .or_else(|| env_str("GOOGLE_APPLICATION_CREDENTIALS"))
+        {
             Some(path) => match std::fs::read_to_string(&path) {
                 Ok(json) => Some(json),
                 Err(e) => {
                     return Err(format!(
-                        "cannot read GOOGLE_APPLICATION_CREDENTIALS ({path}): {e}"
+                        "cannot read vertex service account ({path}): {e}"
                     ))
                 }
             },
             None => None,
         };
+
+        // Static admin console credentials (change them for production!).
+        let admin_email = env_str("ADMIN_EMAIL").unwrap_or_else(|| "admin@toolfix.com".into());
+        let admin_password =
+            env_str("ADMIN_PASSWORD").unwrap_or_else(|| "toolfix@2026".into());
 
         let matching = MatchingConfig {
             radius_stages_m: vec![
@@ -147,6 +160,8 @@ impl Config {
         };
 
         let auth = AuthConfig {
+            admin_email,
+            admin_password,
             access_secret,
             access_ttl_secs,
             refresh_ttl_secs,
@@ -175,6 +190,8 @@ impl Config {
             ai_provider,
             gemini_api_key,
             gemini_model,
+            nvidia_api_key,
+            nvidia_model,
             vertex_project_id,
             vertex_location,
             vertex_model,

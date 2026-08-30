@@ -1,32 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useAsync } from "@/hooks/useAsync";
 import { Header } from "@/components/layout/Header";
-import { Card, PrimaryButton, StatusBadge } from "@/components/ui";
+import { PrimaryButton } from "@/components/ui";
+import { AssistanceRequestList } from "@/components/customer/AssistanceRequestList";
+import { VehicleCard } from "@/components/customer/VehicleCard";
 import { listMyJobs } from "@/services/jobs";
 import { listVehicles } from "@/services/vehicles";
-import { formatMinor, type Job, type Vehicle } from "@/types";
 
 export default function CustomerDashboardPage() {
   const { me, loading } = useAuth();
   const router = useRouter();
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const jobs = useAsync(() => listMyJobs(), [me?.user.id]);
+  const vehicles = useAsync(() => listVehicles(), [me?.user.id]);
 
-  useEffect(() => {
-    if (!loading && (!me || me.user.role !== "customer")) {
-      router.replace("/");
-    }
-  }, [me, loading, router]);
-
-  useEffect(() => {
-    if (me?.user.role !== "customer") return;
-    void listMyJobs().then(setJobs).catch(() => setJobs([]));
-    void listVehicles().then(setVehicles).catch(() => setVehicles([]));
-  }, [me]);
+  if (!loading && (!me || me.user.role !== "customer")) {
+    router.replace("/");
+  }
 
   return (
     <>
@@ -50,60 +43,35 @@ export default function CustomerDashboardPage() {
           Your vehicles
         </h2>
         <div className="mb-8 grid gap-3 sm:grid-cols-3">
-          {vehicles.length === 0 ? (
-            <Card>
-              <p className="text-sm text-slate-500">No vehicles yet — you can add one when you request help.</p>
-            </Card>
-          ) : (
-            vehicles.map((vehicle) => (
-              <Card key={vehicle.id}>
-                <p className="font-semibold capitalize">{vehicle.vehicle_kind}</p>
-                <p className="text-xs text-slate-500">
-                  {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" ") || "—"}
-                </p>
-              </Card>
+          {vehicles.data && vehicles.data.length > 0 ? (
+            vehicles.data.map((vehicle) => (
+              <VehicleCard key={vehicle.id} vehicle={vehicle} />
             ))
+          ) : (
+            <p className="text-sm text-slate-500">
+              No vehicles yet — you can add one when you request help.
+            </p>
           )}
         </div>
 
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
           Assistance history
         </h2>
-        <div className="grid gap-3">
-          {jobs.length === 0 ? (
-            <Card>
-              <p className="text-sm text-slate-500">No requests yet.</p>
-            </Card>
-          ) : (
-            jobs.map((job) => (
-              <Card key={job.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <StatusBadge status={job.status} />
-                  <p className="mt-1 text-xs text-slate-500">
-                    Requested {new Date(job.created_at).toLocaleString("en-IN")}
-                  </p>
-                </div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {job.final_amount_minor ? formatMinor(job.final_amount_minor) : "—"}
-                </p>
-                <div className="flex gap-2">
-                  <Link
-                    href={`/customer/offers?job_id=${job.id}`}
-                    className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                  >
-                    Offers
-                  </Link>
-                  <Link
-                    href={`/customer/tracking?job_id=${job.id}`}
-                    className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700"
-                  >
-                    Track
-                  </Link>
-                </div>
-              </Card>
-            ))
-          )}
+        <div className="mb-3 flex gap-2">
+          <Link
+            href="/customer/history"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Past incidents
+          </Link>
+          <Link
+            href="/customer/payments"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Payment history
+          </Link>
         </div>
+        <AssistanceRequestList jobs={jobs.data ?? []} />
       </main>
     </>
   );

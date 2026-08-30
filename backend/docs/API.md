@@ -120,6 +120,22 @@ POST /api/v1/agent/diagnose
      → AgentDiagnosisDto      (nothing is persisted by this endpoint)
 ```
 
+## Admin console
+
+```http
+POST /api/v1/admin/login                        { email, password }  (ADMIN_EMAIL/ADMIN_PASSWORD)
+GET  /api/v1/admin/overview                     -> platform counters
+GET  /api/v1/admin/users?role=&limit=           -> all users
+POST /api/v1/admin/users/{user_id}/status       { status: active|suspended|deleted }
+GET  /api/v1/admin/mechanics                    -> all mechanic profiles
+POST /api/v1/admin/mechanics/{id}/verify        { verified: bool }
+GET  /api/v1/admin/jobs?limit=                  -> all jobs (joined customer/mechanic)
+```
+
+Login issues the standard HttpOnly session cookies with the ADMIN role;
+every other admin route requires that role. Rotate `ADMIN_PASSWORD` in
+production.
+
 ## WebSocket
 
 ```http

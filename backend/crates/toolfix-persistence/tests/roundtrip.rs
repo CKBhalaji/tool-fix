@@ -111,6 +111,7 @@ async fn marketplace_roundtrip(repos: &Repositories) {
     assert_eq!(repos.jobs.status_history(job.id, 10).await.unwrap().len(), 3);
 
     // Two mechanics bid; accepting one atomically expires the other.
+    let mut mechanic_user_ids = std::collections::HashMap::new();
     for label in ["mecha", "mechb"] {
         let mechanic_user = repos
             .users
@@ -136,6 +137,7 @@ async fn marketplace_roundtrip(repos: &Repositories) {
             )
             .await
             .unwrap();
+        mechanic_user_ids.insert(label.to_string(), mechanic_user.id);
         repos
             .mechanics
             .set_availability(mechanic.id, toolfix_contracts::AvailabilityStatus::Online)
@@ -202,6 +204,25 @@ async fn marketplace_roundtrip(repos: &Repositories) {
         .collect();
     assert!(statuses.contains(&"accepted".to_string()));
     assert!(statuses.contains(&"expired".to_string()));
+
+    // The selected mechanic sees the payment record; the other does not.
+    let payment = repos
+        .payments
+        .create(job.id, 65_000, toolfix_contracts::Currency::Inr, toolfix_contracts::PaymentMethod::Cash, "cash_stub", Some("RCPT-TEST"))
+        .await
+        .expect("payment insert");
+    repos
+        .payments
+        .mark_confirmed(payment.id, "RCPT-TEST")
+        .await
+        .expect("payment confirm");
+    let for_a = repos
+        .payments
+        .list_for_mechanic(mechanic_user_ids["mecha"], 10)
+        .await
+        .expect("mechanic payments");
+    assert_eq!(for_a.len(), 1, "accepted mechanic sees the payment");
+    assert_eq!(for_a[0].status, "confirmed");
 }
 
 #[tokio::test]

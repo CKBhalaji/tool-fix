@@ -6,6 +6,7 @@ pub mod state;
 pub mod ws;
 
 pub mod handlers {
+    pub mod admin;
     pub mod agent;
     pub mod auth;
     pub mod breakdowns;
@@ -14,6 +15,7 @@ pub mod handlers {
     pub mod notifications;
     pub mod offers;
     pub mod payments;
+    pub mod payments_history;
     pub mod ratings;
     pub mod users;
     pub mod vehicles;

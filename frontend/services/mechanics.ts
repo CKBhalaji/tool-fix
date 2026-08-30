@@ -58,3 +58,22 @@ export async function pushLocation(
     },
   });
 }
+
+export interface MechanicPayment {
+  payment_id: string;
+  job_id: string;
+  amount_minor: number;
+  method: string;
+  status: string;
+  receipt_number: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+  job_status: string;
+  customer_email: string | null;
+  customer_name: string | null;
+}
+
+/** Incoming payments for jobs the mechanic completed. */
+export async function listMyEarnings(): Promise<MechanicPayment[]> {
+  return api<MechanicPayment[]>("/api/v1/mechanics/payments");
+}

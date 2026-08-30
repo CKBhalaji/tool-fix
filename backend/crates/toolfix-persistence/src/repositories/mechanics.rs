@@ -338,3 +338,18 @@ impl Mechanics {
         Ok(())
     }
 }
+
+impl Mechanics {
+    /// Admin listing of every mechanic profile.
+    pub async fn list_all(&self, limit: i64) -> Result<Vec<MechanicRow>, PersistenceError> {
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, MechanicRow>(
+                "SELECT * FROM mechanics ORDER BY created_at DESC LIMIT $1"
+            )
+            .bind(limit)
+            .fetch_all(e)
+            .await
+        )?)
+    }
+}

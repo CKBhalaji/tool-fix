@@ -115,4 +115,33 @@ impl Repositories {
     pub async fn ping(&self) -> Result<(), PersistenceError> {
         self.db.ping().await
     }
+
+    /// Platform-wide counters for the admin console.
+    pub async fn admin_overview(&self) -> Result<models::OverviewRow, PersistenceError> {
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, models::OverviewRow>(
+                r#"
+                SELECT
+                  (SELECT COUNT(*) FROM users) AS users_total,
+                  (SELECT COUNT(*) FROM users WHERE role = 'customer') AS customers,
+                  (SELECT COUNT(*) FROM users WHERE role = 'mechanic') AS mechanics,
+                  (SELECT COUNT(*) FROM users WHERE role = 'admin') AS admins,
+                  (SELECT COUNT(*) FROM assistance_jobs) AS jobs_total,
+                  (SELECT COUNT(*) FROM assistance_jobs WHERE status IN
+                     ('mechanics_notified', 'offers_received', 'mechanic_selected',
+                      'mechanic_en_route', 'mechanic_arrived', 'repair_in_progress',
+                      'payment_pending')) AS jobs_active,
+                  (SELECT COUNT(*) FROM assistance_jobs WHERE status = 'completed') AS jobs_completed,
+                  (SELECT COUNT(*) FROM mechanic_offers) AS offers_total,
+                  (SELECT COUNT(*) FROM mechanics WHERE is_verified) AS mechanics_verified,
+                  (SELECT COALESCE(SUM(amount_minor), 0) FROM payments WHERE status = 'confirmed') AS payments_collected_minor,
+                  (SELECT COUNT(*) FROM payments WHERE status = 'confirmed') AS payments_count,
+                  (SELECT COUNT(*) FROM agent_runs) AS ai_runs_total
+                "#,
+            )
+            .fetch_one(e)
+            .await
+        )?)
+    }
 }

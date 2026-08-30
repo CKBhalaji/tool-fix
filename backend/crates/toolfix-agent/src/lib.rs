@@ -8,6 +8,7 @@
 pub mod diagnosis;
 pub mod error;
 pub mod gemini_api;
+pub mod nvidia;
 pub mod pricing;
 pub mod prompts;
 pub mod provider;

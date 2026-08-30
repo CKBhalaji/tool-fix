@@ -1,28 +1,27 @@
 "use client";
 
-import Link from "next/link";
-import { Header } from "@/components/layout/Header";
-import { Card } from "@/components/ui";
+import { OverviewCards } from "@/components/admin/OverviewCards";
+import { useAsync } from "@/hooks/useAsync";
+import { overview } from "@/services/admin";
 
-export default function AdminPage() {
+export default function AdminOverviewPage() {
+  const { data, error, loading, reload } = useAsync(overview, []);
+
   return (
-    <>
-      <Header title="Admin" />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
-        <Card>
-          <h1 className="font-semibold">Admin console</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Role management, mechanic verification, and analytics ship in a later
-            phase. The CUSTOMER/MECHANIC/ADMIN roles and authorization already
-            exist in the backend (see backend/docs/AUTHENTICATION.md).
-          </p>
-          <div className="mt-4">
-            <Link href="/" className="text-sm font-medium text-blue-600 hover:underline">
-              Back to home
-            </Link>
-          </div>
-        </Card>
-      </main>
-    </>
+    <div>
+      {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
+      {loading && !data ? (
+        <p className="text-sm text-slate-500">Loading stats…</p>
+      ) : (
+        <OverviewCards stats={data} />
+      )}
+      <button
+        type="button"
+        onClick={reload}
+        className="mt-4 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+      >
+        Refresh
+      </button>
+    </div>
   );
 }

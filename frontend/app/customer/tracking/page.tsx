@@ -4,11 +4,13 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
-import { MapView } from "@/components/map/MapView";
-import { Card, PrimaryButton, SecondaryButton, StatusBadge } from "@/components/ui";
+import { DiagnosisCard } from "@/components/tracking/DiagnosisCard";
+import { JobStatusPanel } from "@/components/tracking/JobStatusPanel";
+import { TrackingMap } from "@/components/tracking/TrackingMap";
+import { Card, Spinner } from "@/components/ui";
 import { getBreakdown } from "@/services/breakdowns";
 import { getJob, payJob, subscribeJobEvents } from "@/services/jobs";
-import { formatMinor, type BreakdownDetail, type Job } from "@/types";
+import type { BreakdownDetail, Job } from "@/types";
 
 function TrackingInner() {
   const { me, loading } = useAuth();
@@ -20,11 +22,9 @@ function TrackingInner() {
   const [mechanicPosition, setMechanicPosition] = useState<{ latitude: number; longitude: number } | null>(null);
   const [paying, setPaying] = useState(false);
 
-  useEffect(() => {
-    if (!loading && (!me || me.user.role !== "customer")) {
-      router.replace("/");
-    }
-  }, [me, loading, router]);
+  if (!loading && (!me || me.user.role !== "customer")) {
+    router.replace("/");
+  }
 
   // Initial load via promise callbacks (all setState in continuations).
   useEffect(() => {
@@ -75,68 +75,28 @@ function TrackingInner() {
     return <main className="flex flex-1 items-center justify-center text-sm text-slate-500">No job selected.</main>;
   }
 
-  const markers = [];
-  if (detail?.breakdown) {
-    markers.push({
-      id: "breakdown",
-      latitude: detail.breakdown.latitude,
-      longitude: detail.breakdown.longitude,
-      kind: "customer" as const,
-      label: "You",
-    });
-  }
-  if (mechanicPosition) {
-    markers.push({ id: "mechanic", latitude: mechanicPosition.latitude, longitude: mechanicPosition.longitude, kind: "mechanic" as const, label: "Mechanic" });
-  }
-
   return (
     <>
       <Header title="Track assistance" />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         <div className="grid gap-5">
-          <Card className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs text-slate-500">Job status (live)</p>
-              {job ? <StatusBadge status={job.status} /> : <p className="text-sm">Loading…</p>}
-            </div>
-            {job?.status === "repair_completed" && job.final_amount_minor ? (
-              <PrimaryButton onClick={pay} disabled={paying}>
-                {paying ? "Processing…" : `Pay ${formatMinor(job.final_amount_minor)}`}
-              </PrimaryButton>
-            ) : null}
-            {["created", "analyzing", "mechanics_searching", "mechanics_notified", "offers_received"].includes(job?.status ?? "") ? (
-              <SecondaryButton onClick={() => router.push(`/customer/offers?job_id=${job!.id}`)}>
-                View offers
-              </SecondaryButton>
-            ) : null}
-          </Card>
+          <JobStatusPanel
+            job={job}
+            paying={paying}
+            onPay={() => void pay()}
+            onViewOffers={() => router.push(`/customer/offers?job_id=${job!.id}`)}
+          />
 
-          <MapView
-            center={detail?.breakdown ?? { latitude: 12.9716, longitude: 77.5946 }}
-            markers={markers}
-            className="h-72 w-full overflow-hidden rounded-xl border border-slate-200"
+          <TrackingMap
+            breakdown={detail?.breakdown ?? null}
+            mechanicPosition={mechanicPosition}
           />
 
           {detail?.diagnosis ? (
-            <Card>
-              <h2 className="font-semibold">AI assessment (advisory)</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Possible issue: <span className="font-medium">{detail.diagnosis.possible_issue}</span> ·
-                confidence {(detail.diagnosis.confidence * 100).toFixed(0)}% · severity {detail.diagnosis.severity}
-              </p>
-              {detail.price_estimate ? (
-                <p className="mt-1 text-sm text-slate-600">
-                  Estimated cost: {formatMinor(detail.price_estimate.estimated_cost_min_minor)} –{" "}
-                  {formatMinor(detail.price_estimate.estimated_cost_max_minor)}
-                </p>
-              ) : null}
-              <p className="mt-2 rounded-lg bg-slate-50 p-2 text-xs text-slate-500">
-                {detail.diagnosis.reasoning_summary}
-              </p>
-            </Card>
+            <DiagnosisCard diagnosis={detail.diagnosis} estimate={detail.price_estimate} />
           ) : (
             <Card>
-              <p className="text-sm text-slate-500">AI analysis is running — this page updates automatically.</p>
+              <Spinner label="AI analysis is running — this page updates automatically." />
             </Card>
           )}
         </div>

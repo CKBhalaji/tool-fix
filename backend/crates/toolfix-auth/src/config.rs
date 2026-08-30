@@ -11,6 +11,9 @@ pub struct GoogleOAuthConfig {
 
 #[derive(Debug, Clone)]
 pub struct AuthConfig {
+    // Static admin console credentials (backend-verified; server-derived role).
+    pub admin_email: String,
+    pub admin_password: String,
     pub access_secret: String,
     pub access_ttl_secs: i64,
     pub refresh_ttl_secs: i64,

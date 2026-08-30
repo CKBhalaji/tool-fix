@@ -75,6 +75,8 @@ async fn run() -> Result<(), String> {
         &config.ai_provider,
         config.gemini_api_key.as_deref(),
         config.gemini_model.as_deref(),
+        config.nvidia_api_key.as_deref(),
+        config.nvidia_model.as_deref(),
         config.vertex_project_id.as_deref(),
         config.vertex_location.as_deref(),
         config.vertex_model.as_deref(),

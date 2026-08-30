@@ -126,6 +126,16 @@ by hash, then:
 The frontend's `services/api.ts` performs a single-flight transparent
 refresh on any `401` and retries the original request once.
 
+### Admin console login
+
+The operator console uses `POST /api/v1/admin/login` with static
+credentials (`ADMIN_EMAIL` / `ADMIN_PASSWORD`, defaults
+`admin@toolfix.com` / `toolfix@2026` - **change them in production**).
+On success the backend creates/refreshes the internal admin user and issues
+the same HttpOnly cookie session with the role forced to ADMIN. All
+`/api/v1/admin/*` routes require that role; the role always comes from the
+server-side session, never the browser.
+
 ## 6. Roles and authorization
 
 - Roles: `CUSTOMER`, `MECHANIC`, `ADMIN` (stored server-side in `users.role`).

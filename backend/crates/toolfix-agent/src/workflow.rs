@@ -41,12 +41,15 @@ impl AgentWorkflow {
     }
 }
 
-/// Selects the configured provider. `AI_PROVIDER` is `gemini_api` (default)
-/// or `vertex_ai`; both implement the same `AgentProvider` trait.
+/// Selects the configured provider. `AI_PROVIDER` is `gemini_api` (default),
+/// `nvidia`, or `vertex_ai`; all implement the same `AgentProvider` trait.
+#[allow(clippy::too_many_arguments)]
 pub fn build_provider(
     ai_provider: &str,
     gemini_api_key: Option<&str>,
     gemini_model: Option<&str>,
+    nvidia_api_key: Option<&str>,
+    nvidia_model: Option<&str>,
     vertex_project_id: Option<&str>,
     vertex_location: Option<&str>,
     vertex_model: Option<&str>,
@@ -56,7 +59,7 @@ pub fn build_provider(
         "vertex_ai" => {
             let account_json = service_account_json.ok_or_else(|| {
                 AgentError::Config(
-                    "AI_PROVIDER=vertex_ai requires GOOGLE_APPLICATION_CREDENTIALS".into(),
+                    "AI_PROVIDER=vertex_ai requires GOOGLE_APPLICATION_CREDENTIALS (or VERTEX_SERVICE_ACCOUNT_PATH)".into(),
                 )
             })?;
             let vertex = crate::vertex::VertexProvider::from_service_account_json(
@@ -66,6 +69,15 @@ pub fn build_provider(
                 vertex_model.unwrap_or("gemini-2.0-flash"),
             )?;
             Ok(Arc::new(vertex))
+        }
+        "nvidia" => {
+            let key = nvidia_api_key.ok_or_else(|| {
+                AgentError::Config("AI_PROVIDER=nvidia requires NVIDIA_API_KEY".into())
+            })?;
+            Ok(Arc::new(crate::nvidia::NvidiaNimProvider::new(
+                key,
+                nvidia_model.unwrap_or("meta/llama-3.2-90b-vision-instruct"),
+            )))
         }
         _ => {
             let key = gemini_api_key.ok_or_else(|| {

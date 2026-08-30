@@ -81,3 +81,49 @@ export function SecondaryButton({
     </button>
   );
 }
+
+export function StatCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <Card>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+    </Card>
+  );
+}
+
+export function ErrorText({ children }: { children: React.ReactNode }) {
+  if (!children) return null;
+  return <p className="text-sm text-red-600">{children}</p>;
+}
+
+export function Spinner({ label = "Loading…" }: { label?: string }) {
+  return <p className="text-sm text-slate-500">{label}</p>;
+}
+
+export function EmptyState({ message }: { message: string }) {
+  return <p className="py-3 text-sm text-slate-500">{message}</p>;
+}
+
+export function TextInput({
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  className = "",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  className?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      onChange={(event) => onChange(event.target.value)}
+      className={`rounded-xl border border-slate-300 px-3 py-2.5 text-sm ${className}`}
+    />
+  );
+}

@@ -157,3 +157,23 @@ impl Users {
         )?)
     }
 }
+
+impl Users {
+    /// Admin listing; optionally filtered by role.
+    pub async fn list_all(
+        &self,
+        role: Option<&str>,
+        limit: i64,
+    ) -> Result<Vec<UserRow>, PersistenceError> {
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, UserRow>(
+                "SELECT * FROM users WHERE ($2 IS NULL OR role = $2) ORDER BY created_at DESC LIMIT $1"
+            )
+            .bind(limit)
+            .bind(role)
+            .fetch_all(e)
+            .await
+        )?)
+    }
+}

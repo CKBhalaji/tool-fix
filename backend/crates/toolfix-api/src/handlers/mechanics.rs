@@ -10,7 +10,7 @@ use toolfix_contracts::request::{
 use toolfix_contracts::response::MechanicProfileResponse;
 use toolfix_persistence::models::MechanicRow;
 
-fn profile_response(
+pub(crate) fn profile_response(
     row: MechanicRow,
     user: toolfix_persistence::models::UserRow,
 ) -> Result<MechanicProfileResponse, ApiError> {

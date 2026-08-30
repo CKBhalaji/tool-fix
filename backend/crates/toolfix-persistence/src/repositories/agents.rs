@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::error::PersistenceError;
 use crate::models::AgentRunRow;
-use crate::{dual_tx, Db};
+use crate::{dual, dual_tx, Db};
 
 #[derive(Clone)]
 pub struct Agents {
@@ -63,5 +63,39 @@ impl Agents {
         )?;
         tx.commit().await?;
         Ok(run)
+    }
+}
+
+impl Agents {
+    /// AI-usage listing: every agent run joined with its breakdown.
+    pub async fn list_all_admin(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<crate::models::AdminAgentRunRow>, PersistenceError> {
+        Ok(dual!(
+            &self.db,
+            |e| sqlx::query_as::<_, crate::models::AdminAgentRunRow>(
+                r#"
+                SELECT r.id AS run_id,
+                       r.breakdown_id,
+                       r.job_id,
+                       r.kind,
+                       r.provider,
+                       r.model,
+                       r.status,
+                       r.error_message,
+                       r.latency_ms,
+                       r.created_at,
+                       b.problem_description
+                  FROM agent_runs r
+                  JOIN breakdowns b ON b.id = r.breakdown_id
+                 ORDER BY r.created_at DESC
+                 LIMIT $1
+                "#,
+            )
+            .bind(limit)
+            .fetch_all(e)
+            .await
+        )?)
     }
 }

@@ -6,6 +6,7 @@
 //! enums at this boundary.
 
 use chrono::{DateTime, Utc};
+use serde::Serialize;
 use sqlx::FromRow;
 use toolfix_contracts::{
     AvailabilityStatus, Currency, EstimateSource, JobStatus, MediaKind, NotificationChannel,
@@ -433,4 +434,110 @@ impl FeedJobRow {
     pub fn symptoms(&self) -> Vec<String> {
         crate::list_from_json(&self.vehicle_symptoms)
     }
+}
+
+/// Platform-wide counters for the admin overview.
+#[derive(Debug, Serialize, FromRow)]
+pub struct OverviewRow {
+    pub users_total: i64,
+    pub customers: i64,
+    pub mechanics: i64,
+    pub admins: i64,
+    pub jobs_total: i64,
+    pub jobs_active: i64,
+    pub jobs_completed: i64,
+    pub offers_total: i64,
+    pub mechanics_verified: i64,
+    pub payments_collected_minor: i64,
+    pub payments_count: i64,
+    pub ai_runs_total: i64,
+}
+
+/// Joined job row for the admin jobs table.
+#[derive(Debug, FromRow)]
+pub struct AdminJobRow {
+    pub job_id: Uuid,
+    pub job_status: String,
+    pub final_amount_minor: Option<i64>,
+    pub job_created_at: DateTime<Utc>,
+    pub breakdown_id: Uuid,
+    pub problem_description: String,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub customer_email: Option<String>,
+    pub customer_name: Option<String>,
+    pub mechanic_id: Option<Uuid>,
+    pub mechanic_name: Option<String>,
+}
+
+impl AdminJobRow {
+    pub fn job_status(&self) -> Result<JobStatus, PersistenceError> {
+        parse_job_status(&self.job_status)
+    }
+}
+
+/// Admin payments table row (joined with job + customer).
+#[derive(Debug, FromRow)]
+pub struct AdminPaymentRow {
+    pub payment_id: Uuid,
+    pub job_id: Uuid,
+    pub amount_minor: i64,
+    pub currency: String,
+    pub method: String,
+    pub status: String,
+    pub provider: String,
+    pub receipt_number: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub confirmed_at: Option<DateTime<Utc>>,
+    pub customer_email: Option<String>,
+    pub customer_name: Option<String>,
+    pub job_status: String,
+}
+
+/// AI-usage (agent run) table row for the admin console.
+#[derive(Debug, FromRow)]
+pub struct AdminAgentRunRow {
+    pub run_id: Uuid,
+    pub breakdown_id: Uuid,
+    pub job_id: Option<Uuid>,
+    pub kind: String,
+    pub provider: String,
+    pub model: Option<String>,
+    pub status: String,
+    pub error_message: Option<String>,
+    pub latency_ms: Option<i32>,
+    pub created_at: DateTime<Utc>,
+    pub problem_description: String,
+}
+
+/// A customer's own payment record (joined with job status).
+#[derive(Debug, FromRow)]
+pub struct CustomerPaymentRow {
+    pub id: Uuid,
+    pub job_id: Uuid,
+    pub amount_minor: i64,
+    pub currency: String,
+    pub method: String,
+    pub status: String,
+    pub receipt_number: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub confirmed_at: Option<DateTime<Utc>>,
+    pub job_status: String,
+}
+
+/// A mechanic's incoming payment record (joined with job + customer).
+#[derive(Debug, FromRow)]
+pub struct MechanicPaymentRow {
+    pub id: Uuid,
+    pub job_id: Uuid,
+    pub amount_minor: i64,
+    pub currency: String,
+    pub method: String,
+    pub status: String,
+    pub receipt_number: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub confirmed_at: Option<DateTime<Utc>>,
+    pub job_status: String,
+    pub customer_email: Option<String>,
+    pub customer_name: Option<String>,
 }

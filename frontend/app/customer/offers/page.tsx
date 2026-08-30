@@ -1,45 +1,36 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { useAsync } from "@/hooks/useAsync";
 import { Header } from "@/components/layout/Header";
-import { OfferCard } from "@/components/offers";
-import { Card, PrimaryButton, StatusBadge } from "@/components/ui";
+import { OfferList } from "@/components/offers/OfferList";
+import { ErrorText, StatusBadge } from "@/components/ui";
 import { getJob } from "@/services/jobs";
 import { listOffers, selectOffer } from "@/services/offers";
-import { type Job, type Offer } from "@/types";
 
 function OffersInner() {
   const { me, loading } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const jobId = params.get("job_id") ?? "";
-  const [job, setJob] = useState<Job | null>(null);
-  const [offers, setOffers] = useState<Offer[]>([]);
   const [selecting, setSelecting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
 
-  useEffect(() => {
-    if (!loading && (!me || me.user.role !== "customer")) {
-      router.replace("/");
-    }
-  }, [me, loading, router]);
+  const offers = useAsync(
+    () => (jobId ? listOffers(jobId) : Promise.resolve([])),
+    [jobId, reloadTick],
+  );
+  const job = useAsync(
+    () => (jobId ? getJob(jobId) : Promise.resolve(null)),
+    [jobId, reloadTick],
+  );
 
-  // Load + refresh offers via promise callbacks (POST /select also refreshes
-  // by bumping reloadTick from event handlers).
-  useEffect(() => {
-    if (!jobId) return;
-    Promise.all([getJob(jobId), listOffers(jobId)])
-      .then(([freshJob, freshOffers]) => {
-        setJob(freshJob);
-        setOffers(freshOffers);
-      })
-      .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : "Could not load offers");
-      });
-  }, [jobId, reloadTick]);
+  if (!loading && (!me || me.user.role !== "customer")) {
+    router.replace("/");
+  }
 
   async function choose(offerId: string) {
     setSelecting(offerId);
@@ -58,48 +49,27 @@ function OffersInner() {
     return <main className="flex flex-1 items-center justify-center text-sm text-slate-500">No job selected.</main>;
   }
 
-  const pending = offers.filter((offer) => offer.status === "pending");
-  const decided = offers.filter((offer) => offer.status !== "pending");
-
   return (
     <>
       <Header title="Compare mechanics" />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
-        {job ? (
+        {job.data ? (
           <div className="mb-4 flex items-center gap-3">
-            <StatusBadge status={job.status} />
+            <StatusBadge status={job.data.status} />
             <span className="text-sm text-slate-500">
-              {pending.length} pending {pending.length === 1 ? "offer" : "offers"}
+              {(offers.data ?? []).filter((offer) => offer.status === "pending").length} pending offer(s)
             </span>
           </div>
         ) : null}
 
-        {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
+        <ErrorText>{error}</ErrorText>
 
-        {pending.length === 0 && decided.length === 0 ? (
-          <Card>
-            <p className="text-sm text-slate-500">
-              No offers yet. Mechanics near you are being notified — refresh as bids arrive.
-            </p>
-            <div className="mt-3">
-              <PrimaryButton onClick={() => setReloadTick((tick) => tick + 1)}>Refresh</PrimaryButton>
-            </div>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {pending.map((offer) => (
-              <OfferCard
-                key={offer.id}
-                offer={offer}
-                onSelect={() => void choose(offer.id)}
-                selected={selecting === offer.id}
-              />
-            ))}
-            {decided.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} />
-            ))}
-          </div>
-        )}
+        <OfferList
+          offers={offers.data ?? []}
+          selecting={selecting}
+          onSelect={(offerId) => void choose(offerId)}
+          onRefresh={() => setReloadTick((tick) => tick + 1)}
+        />
 
         <p className="mt-6 text-center text-xs text-slate-400">
           Offers come from independent mechanics — compare price, rating, and ETA before choosing.

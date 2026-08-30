@@ -136,6 +136,50 @@ impl AuthService {
         self.issue_session(user, user_agent, ip_address).await
     }
 
+    /// Admin console login with the configured static credentials
+    /// (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). Creates or refreshes the internal
+    /// admin user and issues a session whose role is always ADMIN — the
+    /// browser never decides the role.
+    pub async fn admin_login(
+        &self,
+        email: &str,
+        password: &str,
+        user_agent: Option<&str>,
+        ip_address: Option<&str>,
+    ) -> Result<IssuedSession, AuthError> {
+        // Constant-time-ish comparison to avoid trivial timing oracles.
+        use sha2::{Digest, Sha256};
+        let expected = Sha256::digest(
+            format!("{}:{}", self.config.admin_email, self.config.admin_password).as_bytes(),
+        );
+        let provided = Sha256::digest(format!("{email}:{password}").as_bytes());
+        if expected.as_slice() != provided.as_slice() {
+            tracing::warn!(submitted_email = %email, "admin login rejected");
+            return Err(AuthError::Unauthenticated);
+        }
+
+        let user = self
+            .users
+            .upsert_by_external_identity(
+                "internal:admin",
+                Some(&self.config.admin_email),
+                Some("ToolFix Admin"),
+                None,
+            )
+            .await?;
+        self.users.set_role(user.id, UserRole::Admin).await?;
+        self.users
+            .set_onboarding_status(user.id, toolfix_contracts::OnboardingStatus::Complete)
+            .await?;
+        let user = self.users.find_by_id(user.id).await?;
+        if user.status != "active" {
+            return Err(AuthError::Forbidden);
+        }
+
+        tracing::info!(admin = %self.config.admin_email, "admin console login");
+        self.issue_session(user, user_agent, ip_address).await
+    }
+
     /// Creates the DB-backed session and token pair.
     async fn issue_session(
         &self,
