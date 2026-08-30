@@ -22,6 +22,7 @@ pub(crate) fn to_response(row: VehicleRow) -> Result<VehicleResponse, ApiError> 
     })
 }
 
+#[utoipa::path(post, path = "/api/v1/vehicles", tag = "vehicles", operation_id = "vehicles_create", request_body = VehicleCreateRequest, responses((status = 200, body = VehicleResponse)))]
 pub async fn create(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -45,6 +46,7 @@ pub async fn create(
     Ok(Json(to_response(row)?))
 }
 
+#[utoipa::path(get, path = "/api/v1/vehicles", tag = "vehicles", operation_id = "vehicles_list", responses((status = 200, body = [VehicleResponse])))]
 pub async fn list(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -56,6 +58,7 @@ pub async fn list(
         .map(Json)
 }
 
+#[utoipa::path(get, path = "/api/v1/vehicles/{vehicle_id}", tag = "vehicles", operation_id = "vehicles_get", params(("vehicle_id" = Uuid, Path, description = "Vehicle id")), responses((status = 200, body = VehicleResponse)))]
 pub async fn get_one(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -68,6 +71,7 @@ pub async fn get_one(
     Ok(Json(to_response(row)?))
 }
 
+#[utoipa::path(patch, path = "/api/v1/vehicles/{vehicle_id}", tag = "vehicles", operation_id = "vehicles_update", params(("vehicle_id" = Uuid, Path)), request_body = VehicleUpdateRequest, responses((status = 200, body = VehicleResponse)))]
 pub async fn update(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -93,6 +97,7 @@ pub async fn update(
     Ok(Json(to_response(row)?))
 }
 
+#[utoipa::path(delete, path = "/api/v1/vehicles/{vehicle_id}", tag = "vehicles", operation_id = "vehicles_delete", params(("vehicle_id" = Uuid, Path)), responses((status = 204)))]
 pub async fn delete(
     State(state): State<AppState>,
     auth: AuthUser,

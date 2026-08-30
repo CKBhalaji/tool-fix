@@ -25,6 +25,7 @@ pub(crate) fn job_response(row: &JobRow) -> Result<JobResponse, ApiError> {
 }
 
 /// GET /api/v1/jobs/{id}
+#[utoipa::path(get, path = "/api/v1/jobs/{id}", tag = "jobs", operation_id = "jobs_get", params(("id" = Uuid, Path)), responses((status = 200, body = JobResponse)))]
 pub async fn get_job(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -51,6 +52,7 @@ pub async fn get_job(
 }
 
 /// GET /api/v1/jobs/{id}/status-history
+#[utoipa::path(get, path = "/api/v1/jobs/{id}/status-history", tag = "jobs", operation_id = "jobs_status_history", params(("id" = Uuid, Path)), responses((status = 200, body = [JobStatusHistoryEntry])))]
 pub async fn status_history(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -91,6 +93,7 @@ pub async fn status_history(
 }
 
 /// POST /api/v1/jobs/{id}/arrived (mechanic)
+#[utoipa::path(post, path = "/api/v1/jobs/{id}/arrived", tag = "jobs", operation_id = "jobs_mark_arrived", params(("id" = Uuid, Path)), responses((status = 200, body = JobResponse)))]
 pub async fn mark_arrived(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -101,6 +104,7 @@ pub async fn mark_arrived(
 }
 
 /// POST /api/v1/jobs/{id}/start-repair (mechanic)
+#[utoipa::path(post, path = "/api/v1/jobs/{id}/start-repair", tag = "jobs", operation_id = "jobs_start_repair", params(("id" = Uuid, Path)), responses((status = 200, body = JobResponse)))]
 pub async fn start_repair(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -111,6 +115,7 @@ pub async fn start_repair(
 }
 
 /// POST /api/v1/jobs/{id}/complete (mechanic)
+#[utoipa::path(post, path = "/api/v1/jobs/{id}/complete", tag = "jobs", operation_id = "jobs_complete", params(("id" = Uuid, Path)), responses((status = 200, body = JobResponse)))]
 pub async fn complete(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -122,6 +127,7 @@ pub async fn complete(
 
 /// POST /api/v1/jobs/{id}/start-travel (mechanic; also exposed via mechanic
 /// handlers as the post-acceptance action).
+#[utoipa::path(post, path = "/api/v1/jobs/{id}/start-travel", tag = "jobs", operation_id = "jobs_start_travel", params(("id" = Uuid, Path)), responses((status = 200, body = JobResponse)))]
 pub async fn start_travel(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -132,6 +138,7 @@ pub async fn start_travel(
 }
 
 /// GET /api/v1/jobs — the caller's jobs (customer or mechanic view).
+#[utoipa::path(get, path = "/api/v1/jobs", tag = "jobs", operation_id = "jobs_list_mine", responses((status = 200, body = [JobResponse])))]
 pub async fn list_mine(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -148,6 +155,7 @@ pub async fn list_mine(
 
 /// PUT /api/v1/jobs/{id}/location — mechanic location ping during a job
 /// (also works without a job for general availability pings).
+#[utoipa::path(post, path = "/api/v1/jobs/{id}/location", tag = "jobs", operation_id = "jobs_push_location", params(("id" = Uuid, Path)), request_body = MechanicLocationPing, responses((status = 200)))]
 pub async fn push_location(
     State(state): State<AppState>,
     auth: AuthUser,

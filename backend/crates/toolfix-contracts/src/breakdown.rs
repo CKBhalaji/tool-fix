@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Deserialize)]
 pub struct BreakdownCreateRequest {
     pub vehicle_id: Uuid,
     pub latitude: f64,
@@ -15,7 +15,7 @@ pub struct BreakdownCreateRequest {
     pub vehicle_symptoms: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct BreakdownMediaResponse {
     pub id: Uuid,
     pub breakdown_id: Uuid,
@@ -25,7 +25,7 @@ pub struct BreakdownMediaResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize, Deserialize)]
 pub struct AgentDiagnosisDto {
     pub possible_issue: String,
     pub confidence: f64,
@@ -38,7 +38,7 @@ pub struct AgentDiagnosisDto {
     pub reasoning_summary: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct PriceEstimateDto {
     pub repair_category: crate::enums::RepairCategory,
     pub estimated_cost_min_minor: i64,
@@ -50,7 +50,7 @@ pub struct PriceEstimateDto {
 }
 
 /// AI output is advisory only; this response is informational.
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct DiagnosisResponse {
     pub breakdown_id: Uuid,
     pub diagnosis: AgentDiagnosisDto,

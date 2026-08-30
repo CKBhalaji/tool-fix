@@ -24,16 +24,16 @@ export function PastIncidents({ jobs }: { jobs: Job[] }) {
         <Card key={job.id} className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <StatusBadge status={job.status} />
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted">
               {new Date(job.created_at).toLocaleString("en-IN")}
             </p>
           </div>
-          <p className="text-sm font-semibold text-slate-900">
+          <p className="text-sm font-semibold text-foreground">
             {job.final_amount_minor ? formatMinor(job.final_amount_minor) : "—"}
           </p>
           <Link
             href={`/customer/tracking?job_id=${job.id}`}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-secondary hover:bg-surface-secondary"
           >
             Details
           </Link>

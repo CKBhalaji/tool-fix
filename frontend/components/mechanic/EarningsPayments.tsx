@@ -12,9 +12,9 @@ export function EarningsPayments({ payments }: { payments: MechanicPayment[] }) 
   return (
     <div className="grid gap-3">
       <Card>
-        <p className="text-sm text-slate-500">Received (confirmed payments)</p>
-        <p className="text-3xl font-bold text-slate-900">{formatMinor(totalMinor)}</p>
-        <p className="mt-1 text-xs text-slate-500">{confirmed.length} confirmed payment(s)</p>
+        <p className="text-sm text-muted">Received (confirmed payments)</p>
+        <p className="text-3xl font-bold text-foreground">{formatMinor(totalMinor)}</p>
+        <p className="mt-1 text-xs text-muted">{confirmed.length} confirmed payment(s)</p>
       </Card>
 
       {payments.length === 0 ? (
@@ -25,7 +25,7 @@ export function EarningsPayments({ payments }: { payments: MechanicPayment[] }) 
         <Card className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="text-xs uppercase text-slate-400">
+              <tr className="text-xs uppercase text-muted">
                 <th className="py-2 pr-3">Date</th>
                 <th className="py-2 pr-3">Customer</th>
                 <th className="py-2 pr-3">Amount</th>
@@ -36,11 +36,11 @@ export function EarningsPayments({ payments }: { payments: MechanicPayment[] }) 
             </thead>
             <tbody>
               {payments.map((payment) => (
-                <tr key={payment.payment_id} className="border-t border-slate-100">
-                  <td className="py-2 pr-3 text-xs text-slate-500">
+                <tr key={payment.payment_id} className="border-t border-border">
+                  <td className="py-2 pr-3 text-xs text-muted">
                     {new Date(payment.created_at).toLocaleString("en-IN")}
                   </td>
-                  <td className="py-2 pr-3 text-xs text-slate-600">
+                  <td className="py-2 pr-3 text-xs text-secondary">
                     {payment.customer_email ?? payment.customer_name ?? "—"}
                   </td>
                   <td className="py-2 pr-3 font-semibold">{formatMinor(payment.amount_minor)}</td>
@@ -49,16 +49,16 @@ export function EarningsPayments({ payments }: { payments: MechanicPayment[] }) 
                     <span
                       className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         payment.status === "confirmed"
-                          ? "bg-green-100 text-green-700"
+                          ? "bg-success-light text-success"
                           : payment.status === "failed"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-yellow-100 text-yellow-800"
+                            ? "bg-error-light text-error"
+                            : "bg-warning-light text-warning"
                       }`}
                     >
                       {payment.status}
                     </span>
                   </td>
-                  <td className="py-2 text-xs text-slate-500">{payment.receipt_number ?? "—"}</td>
+                  <td className="py-2 text-xs text-muted">{payment.receipt_number ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -50,31 +50,31 @@ export default function MechanicDashboardPage() {
             />
 
             {profile.data && !profile.data.repair_categories.length ? (
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-warning">
                 Set your services and vehicle types in the profile form to appear in matching.
               </p>
             ) : null}
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <Link href="/mechanic/requests" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300">
+              <Link href="/mechanic/requests" className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary">
                 <p className="font-semibold">Nearby requests</p>
-                <p className="mt-1 text-xs text-slate-500">See breakdowns around you and submit offers.</p>
+                <p className="mt-1 text-xs text-muted">See breakdowns around you and submit offers.</p>
               </Link>
-              <Link href="/mechanic/jobs" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300">
+              <Link href="/mechanic/jobs" className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary">
                 <p className="font-semibold">My jobs</p>
-                <p className="mt-1 text-xs text-slate-500">Travel, arrive, repair, and complete accepted jobs.</p>
+                <p className="mt-1 text-xs text-muted">Travel, arrive, repair, and complete accepted jobs.</p>
               </Link>
-              <Link href="/mechanic/earnings" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300">
+              <Link href="/mechanic/earnings" className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary">
                 <p className="font-semibold">Earnings</p>
-                <p className="mt-1 text-xs text-slate-500">Summary of completed work.</p>
+                <p className="mt-1 text-xs text-muted">Summary of completed work.</p>
               </Link>
-              <Link href="/mechanic/payments" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300">
+              <Link href="/mechanic/payments" className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary">
                 <p className="font-semibold">Payments</p>
-                <p className="mt-1 text-xs text-slate-500">Payment status and receipts for your jobs.</p>
+                <p className="mt-1 text-xs text-muted">Payment status and receipts for your jobs.</p>
               </Link>
-              <Link href="/mechanic/history" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-300">
+              <Link href="/mechanic/history" className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-primary">
                 <p className="font-semibold">Past jobs</p>
-                <p className="mt-1 text-xs text-slate-500">Completed, cancelled, and expired incidents.</p>
+                <p className="mt-1 text-xs text-muted">Completed, cancelled, and expired incidents.</p>
               </Link>
             </div>
 

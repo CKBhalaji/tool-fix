@@ -29,8 +29,8 @@ export function AdminLoginForm({ onSignedIn }: { onSignedIn: () => void }) {
 
   return (
     <Card className="w-full max-w-sm">
-      <h1 className="text-lg font-bold text-slate-900">Admin sign in</h1>
-      <p className="mt-1 text-xs text-slate-500">
+      <h1 className="text-lg font-bold text-foreground">Admin sign in</h1>
+      <p className="mt-1 text-xs text-muted">
         Operator access only. Sessions are HttpOnly cookies; all actions are audit-logged.
       </p>
       <div className="mt-4 grid gap-3">

@@ -35,14 +35,14 @@ export function PastJobsList({
         <Card key={job.id} className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
             <StatusBadge status={job.status} />
-            <p className="mt-1 truncate text-sm font-medium text-slate-800">
+            <p className="mt-1 truncate text-sm font-medium text-foreground">
               {descriptions[job.id] ?? "Breakdown request"}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted">
               {new Date(job.updated_at).toLocaleString("en-IN")}
             </p>
           </div>
-          <p className="text-sm font-semibold text-slate-900">
+          <p className="text-sm font-semibold text-foreground">
             {job.final_amount_minor ? formatMinor(job.final_amount_minor) : "—"}
           </p>
         </Card>

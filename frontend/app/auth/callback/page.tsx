@@ -36,7 +36,7 @@ export default function AuthCallbackPage() {
     <>
       <Header />
       <main className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-slate-500">Signing you in…</p>
+        <p className="text-sm text-muted">Signing you in…</p>
       </main>
     </>
   );

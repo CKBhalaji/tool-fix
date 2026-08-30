@@ -91,7 +91,7 @@ export function BreakdownRequestForm() {
           <button
             type="button"
             onClick={locateOnce}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-secondary hover:bg-surface-secondary"
           >
             Detect my location
           </button>
@@ -100,15 +100,15 @@ export function BreakdownRequestForm() {
           center={pin ?? { latitude: 12.9716, longitude: 77.5946 }}
           markers={markers}
           onPick={(latitude, longitude) => setPicked({ latitude, longitude })}
-          className="h-64 w-full overflow-hidden rounded-xl border border-slate-200"
+          className="h-64 w-full overflow-hidden rounded-xl border border-border"
         />
         {pin ? (
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-muted">
             {pin.latitude.toFixed(5)}, {pin.longitude.toFixed(5)}
             {position?.accuracy ? ` (±${Math.round(position.accuracy)} m)` : ""}
           </p>
         ) : (
-          <p className="mt-2 text-xs text-slate-500">Tap the map to pin your exact spot.</p>
+          <p className="mt-2 text-xs text-muted">Tap the map to pin your exact spot.</p>
         )}
       </Card>
 
@@ -118,7 +118,7 @@ export function BreakdownRequestForm() {
           <select
             value={vehicleId}
             onChange={(event) => setVehicleId(event.target.value)}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-border px-3 py-2.5 text-sm"
           >
             <option value="">— Add a new vehicle —</option>
             {vehicles.map((vehicle: Vehicle) => (
@@ -133,7 +133,7 @@ export function BreakdownRequestForm() {
             <select
               value={newKind}
               onChange={(event) => setNewKind(event.target.value as VehicleKind)}
-              className="rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+              className="rounded-xl border border-border px-3 py-2.5 text-sm"
             >
               {VEHICLE_KINDS.map((kind) => (
                 <option key={kind} value={kind}>{kind}</option>
@@ -152,7 +152,7 @@ export function BreakdownRequestForm() {
           onChange={(event) => setDescription(event.target.value)}
           rows={3}
           placeholder="e.g. Bike suddenly stopped while riding. Engine turns but does not start."
-          className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+          className="w-full rounded-xl border border-border px-3 py-2.5 text-sm"
         />
         <TextInput
           value={symptoms}
@@ -165,9 +165,9 @@ export function BreakdownRequestForm() {
           accept="image/*"
           capture="environment"
           onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
-          className="mt-3 block w-full text-sm text-slate-600"
+          className="mt-3 block w-full text-sm text-secondary"
         />
-        {photo ? <p className="mt-1 text-xs text-slate-500">Attached: {photo.name}</p> : null}
+        {photo ? <p className="mt-1 text-xs text-muted">Attached: {photo.name}</p> : null}
       </Card>
 
       <ErrorText>{error}</ErrorText>

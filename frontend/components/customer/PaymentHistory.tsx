@@ -30,23 +30,23 @@ export function PaymentHistory({ payments }: { payments: CustomerPayment[] }) {
       {payments.map((payment) => (
         <Card key={payment.payment_id} className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="font-semibold text-slate-900">{formatMinor(payment.amount_minor)}</p>
-            <p className="text-xs text-slate-500">
+            <p className="font-semibold text-foreground">{formatMinor(payment.amount_minor)}</p>
+            <p className="text-xs text-muted">
               {new Date(payment.created_at).toLocaleString("en-IN")} · {payment.method}
             </p>
           </div>
           <span
             className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
               payment.status === "confirmed"
-                ? "bg-green-100 text-green-700"
+                ? "bg-success-light text-success"
                 : payment.status === "failed"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-yellow-100 text-yellow-800"
+                  ? "bg-error-light text-error"
+                  : "bg-warning-light text-warning"
             }`}
           >
             {payment.status}
           </span>
-          <p className="text-xs text-slate-500">Receipt: {payment.receipt_number ?? "—"}</p>
+          <p className="text-xs text-muted">Receipt: {payment.receipt_number ?? "—"}</p>
         </Card>
       ))}
     </div>

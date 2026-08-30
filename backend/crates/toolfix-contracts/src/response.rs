@@ -7,18 +7,18 @@ use uuid::Uuid;
 
 /// Returned by `POST /api/v1/auth/google` for clients that want the consent
 /// URL as JSON; `GET /api/v1/auth/google/login` redirects directly.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize, Deserialize)]
 pub struct GoogleLoginUrlResponse {
     pub login_url: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct LoggedInResponse {
     pub user: UserResponse,
     pub redirect: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct MechanicProfileResponse {
     pub mechanic_id: Uuid,
     pub user: UserResponse,
@@ -39,7 +39,7 @@ pub struct MechanicProfileResponse {
 }
 
 /// A job visible to an eligible mechanic in the nearby-requests feed.
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct MechanicFeedItem {
     pub job_id: Uuid,
     pub breakdown_id: Uuid,

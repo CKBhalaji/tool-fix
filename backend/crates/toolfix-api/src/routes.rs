@@ -5,6 +5,8 @@ use axum::http::StatusCode;
 use axum::routing::{get, patch, post};
 use axum::{Json, Router};
 use axum::extract::DefaultBodyLimit;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use crate::AppState;
 
@@ -27,6 +29,82 @@ async fn health_ready(State(state): State<crate::AppState>) -> StatusCode {
         Err(_) => StatusCode::SERVICE_UNAVAILABLE,
     }
 }
+
+#[derive(OpenApi)]
+#[openapi(
+    info(title = "ToolFix API", description = "On-demand roadside assistance marketplace", version = "0.1.0"),
+    paths(
+        crate::handlers::auth::google_login_url,
+        crate::handlers::auth::google_login,
+        crate::handlers::auth::google_callback,
+        crate::handlers::auth::refresh,
+        crate::handlers::auth::logout,
+        crate::handlers::auth::me,
+        crate::handlers::users::onboarding,
+        crate::handlers::users::get_me,
+        crate::handlers::users::update_me,
+        crate::handlers::vehicles::create,
+        crate::handlers::vehicles::list,
+        crate::handlers::vehicles::get_one,
+        crate::handlers::vehicles::update,
+        crate::handlers::vehicles::delete,
+        crate::handlers::breakdowns::create,
+        crate::handlers::breakdowns::get_one,
+        crate::handlers::breakdowns::cancel,
+        crate::handlers::breakdowns::upload_media,
+        crate::handlers::breakdowns::download_media,
+        crate::handlers::breakdowns::diagnosis,
+        crate::handlers::mechanics::get_me,
+        crate::handlers::mechanics::onboarding,
+        crate::handlers::mechanics::update_me,
+        crate::handlers::mechanics::set_availability,
+        crate::handlers::mechanics::push_location,
+        crate::handlers::mechanics::requests,
+        crate::handlers::jobs::list_mine,
+        crate::handlers::jobs::get_job,
+        crate::handlers::jobs::status_history,
+        crate::handlers::jobs::mark_arrived,
+        crate::handlers::jobs::start_repair,
+        crate::handlers::jobs::complete,
+        crate::handlers::jobs::start_travel,
+        crate::handlers::jobs::push_location,
+        crate::handlers::offers::create_offer,
+        crate::handlers::offers::list_offers,
+        crate::handlers::offers::select_offer,
+        crate::handlers::offers::withdraw_offer,
+        crate::handlers::payments::pay,
+        crate::handlers::ratings::create_rating,
+        crate::handlers::ratings::mechanic_reviews,
+        crate::handlers::notifications::list_notifications,
+        crate::handlers::payments_history::my_payments,
+        crate::handlers::payments_history::my_earnings,
+        crate::handlers::agent::diagnose,
+        crate::handlers::admin::login,
+        crate::handlers::admin::overview,
+        crate::handlers::admin::users,
+        crate::handlers::admin::set_user_status,
+        crate::handlers::admin::mechanics,
+        crate::handlers::admin::verify_mechanic,
+        crate::handlers::admin::jobs,
+        crate::handlers::admin::payments,
+        crate::handlers::admin::agent_runs,
+    ),
+    tags(
+        (name = "auth", description = "Authentication and sessions"),
+        (name = "users", description = "Profiles and onboarding"),
+        (name = "vehicles", description = "Customer vehicles"),
+        (name = "breakdowns", description = "Breakdown reports and AI analysis"),
+        (name = "mechanics", description = "Mechanic profile, availability, feed"),
+        (name = "jobs", description = "Assistance job lifecycle"),
+        (name = "offers", description = "Mechanic bidding"),
+        (name = "payments", description = "Payment history and receipts"),
+        (name = "ratings", description = "Ratings and reviews"),
+        (name = "notifications", description = "In-app notifications"),
+        (name = "agent", description = "Advisory AI endpoints"),
+        (name = "admin", description = "Admin console"),
+    )
+)]
+struct ApiDoc;
 
 pub fn router(state: AppState, cors: tower_http::cors::CorsLayer) -> Router {
     let auth_routes = Router::new()
@@ -201,7 +279,7 @@ pub fn router(state: AppState, cors: tower_http::cors::CorsLayer) -> Router {
             get(crate::handlers::admin::agent_runs),
         );
 
-    Router::new()
+    let app: Router = Router::new()
         .route("/health/live", get(health_live))
         .route("/health/ready", get(health_ready))
         .route("/metrics", get(metrics))
@@ -220,5 +298,7 @@ pub fn router(state: AppState, cors: tower_http::cors::CorsLayer) -> Router {
         .nest("/api/v1/ws", ws_routes)
         .layer(DefaultBodyLimit::max(15 * 1024 * 1024))
         .layer(cors)
-        .with_state(state)
+        .with_state(state);
+
+    app.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
 }

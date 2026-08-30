@@ -19,6 +19,7 @@ fn rating_response(row: toolfix_persistence::models::RatingRow) -> RatingRespons
 }
 
 /// POST /api/v1/ratings (customer rates a completed job)
+#[utoipa::path(post, path = "/api/v1/ratings", tag = "ratings", operation_id = "ratings_create", request_body = RatingCreateRequest, responses((status = 200, body = RatingResponse)))]
 pub async fn create_rating(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -29,6 +30,7 @@ pub async fn create_rating(
 }
 
 /// GET /api/v1/mechanics/{mechanic_id}/reviews
+#[utoipa::path(get, path = "/api/v1/ratings/mechanics/{mechanic_id}/reviews", tag = "ratings", operation_id = "ratings_mechanic_reviews", params(("mechanic_id" = Uuid, Path)), responses((status = 200, body = [RatingResponse])))]
 pub async fn mechanic_reviews(
     State(state): State<AppState>,
     Path(mechanic_id): Path<uuid::Uuid>,

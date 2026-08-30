@@ -42,7 +42,7 @@ export function MyJobsList({
                 <StatusBadge status={job.status} />
                 <p className="mt-1 font-semibold">{description}</p>
                 {detail?.breakdown ? (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted">
                     {detail.breakdown.latitude.toFixed(4)}, {detail.breakdown.longitude.toFixed(4)}
                     {detail.breakdown.address ? ` · ${detail.breakdown.address}` : ""}
                   </p>

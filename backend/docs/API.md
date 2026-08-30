@@ -1,6 +1,12 @@
 # API Reference
 
-Base URL (dev): `http://localhost:8080`. All authenticated routes require the
+Base URL (dev): `http://localhost:8080`.
+
+> Interactive Swagger UI: `http://localhost:8080/swagger-ui` (OpenAPI 3.1 JSON at
+> `/api-docs/openapi.json`), generated at compile time with
+> [utoipa](https://github.com/juhaku/utoipa) from the handler annotations.
+> Authenticated endpoints read the session cookie — use the admin/mechanic
+> login endpoints first, then try protected routes directly. All authenticated routes require the
 `access_token` HttpOnly cookie (set by the auth flow). Errors return a JSON
 body `{ "code": "...", "message": "..." }` with an appropriate status.
 

@@ -11,14 +11,14 @@ export default function AdminOverviewPage() {
     <div>
       {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
       {loading && !data ? (
-        <p className="text-sm text-slate-500">Loading stats…</p>
+        <p className="text-sm text-muted">Loading stats…</p>
       ) : (
         <OverviewCards stats={data} />
       )}
       <button
         type="button"
         onClick={reload}
-        className="mt-4 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        className="mt-4 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-secondary hover:bg-surface-secondary"
       >
         Refresh
       </button>

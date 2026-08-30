@@ -28,7 +28,7 @@ export default function MechanicEarningsPage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6">
         <EarningsSummary jobs={(jobs.data ?? []) as Job[]} />
         <div className="mt-4">
-          <Link href="/mechanic/payments" className="text-sm font-medium text-blue-600 hover:underline">
+          <Link href="/mechanic/payments" className="text-sm font-medium text-primary hover:underline">
             View payment records →
           </Link>
         </div>

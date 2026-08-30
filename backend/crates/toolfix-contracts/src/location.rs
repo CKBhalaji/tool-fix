@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// A WGS84 coordinate. Latitude must be within [-90, 90] and longitude
 /// within [-180, 180]; construction is fallible for that reason.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct LatLng {
     pub latitude: f64,
     pub longitude: f64,

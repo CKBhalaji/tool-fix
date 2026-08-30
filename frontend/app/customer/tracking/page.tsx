@@ -72,7 +72,7 @@ function TrackingInner() {
   }
 
   if (!jobId) {
-    return <main className="flex flex-1 items-center justify-center text-sm text-slate-500">No job selected.</main>;
+    return <main className="flex flex-1 items-center justify-center text-sm text-muted">No job selected.</main>;
   }
 
   return (
@@ -107,7 +107,7 @@ function TrackingInner() {
 
 export default function TrackingPage() {
   return (
-    <Suspense fallback={<main className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading…</main>}>
+    <Suspense fallback={<main className="flex flex-1 items-center justify-center text-sm text-muted">Loading…</main>}>
       <TrackingInner />
     </Suspense>
   );

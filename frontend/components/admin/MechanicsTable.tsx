@@ -14,7 +14,7 @@ export function MechanicsTable({
     <Card className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="text-xs uppercase text-slate-400">
+          <tr className="text-xs uppercase text-muted">
             <th className="py-2 pr-3">Mechanic</th>
             <th className="py-2 pr-3">City / Area</th>
             <th className="py-2 pr-3">Availability</th>
@@ -25,12 +25,12 @@ export function MechanicsTable({
         </thead>
         <tbody>
           {mechanics.map((mechanic) => (
-            <tr key={mechanic.mechanic_id} className="border-t border-slate-100">
+            <tr key={mechanic.mechanic_id} className="border-t border-border">
               <td className="py-2 pr-3">
-                <p className="font-medium text-slate-800">{mechanic.display_name ?? "—"}</p>
-                <p className="text-xs text-slate-500">{mechanic.user.email ?? ""}</p>
+                <p className="font-medium text-foreground">{mechanic.display_name ?? "—"}</p>
+                <p className="text-xs text-muted">{mechanic.user.email ?? ""}</p>
               </td>
-              <td className="py-2 pr-3 text-xs text-slate-600">
+              <td className="py-2 pr-3 text-xs text-secondary">
                 {mechanic.city ?? "—"} · {mechanic.service_area_km} km
               </td>
               <td className="py-2 pr-3 capitalize">{mechanic.availability_status}</td>
@@ -44,8 +44,8 @@ export function MechanicsTable({
                   onClick={() => onToggleVerified(mechanic)}
                   className={`rounded-lg px-3 py-1 text-xs font-semibold ${
                     mechanic.is_verified
-                      ? "bg-green-100 text-green-700"
-                      : "border border-slate-300 text-slate-600"
+                      ? "bg-success-light text-success"
+                      : "border border-border text-secondary"
                   }`}
                 >
                   {mechanic.is_verified ? "Verified" : "Verify"}

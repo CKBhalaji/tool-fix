@@ -4,8 +4,9 @@ use axum::extract::State;
 use axum::Json;
 use crate::{ApiError, AppState};
 use toolfix_auth::AuthUser;
+use toolfix_contracts::breakdown::AgentDiagnosisDto;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, utoipa::ToSchema)]
 pub struct AgentDiagnoseRequest {
     pub description: String,
     pub vehicle_kind: Option<toolfix_contracts::VehicleKind>,
@@ -19,6 +20,7 @@ pub struct AgentDiagnoseRequest {
 /// persisted and nothing in the marketplace changes as a result; the
 /// persisted path runs inside the job pipeline where outputs are
 /// validated and recorded with an audit trail.
+#[utoipa::path(post, path = "/api/v1/agent/diagnose", tag = "agent", operation_id = "agent_diagnose", request_body = AgentDiagnoseRequest, responses((status = 200, body = AgentDiagnosisDto)))]
 pub async fn diagnose(
     State(state): State<AppState>,
     _auth: AuthUser,

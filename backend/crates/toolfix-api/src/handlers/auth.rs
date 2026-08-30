@@ -32,6 +32,7 @@ fn user_response(row: &toolfix_persistence::models::UserRow) -> Result<UserRespo
 
 /// POST /api/v1/auth/google — returns the consent URL as JSON for clients
 /// that want to drive the redirect from JavaScript.
+#[utoipa::path(post, path = "/api/v1/auth/google", tag = "auth", operation_id = "auth_google_login_url", responses((status = 200, body = GoogleLoginUrlResponse)))]
 pub async fn google_login_url(
     State(state): State<AppState>,
 ) -> Result<Json<GoogleLoginUrlResponse>, ApiError> {
@@ -41,6 +42,7 @@ pub async fn google_login_url(
 
 /// GET /api/v1/auth/google/login — 302 to Google's consent page with
 /// OAuth state + PKCE verifier stored in short-lived HttpOnly cookies.
+#[utoipa::path(get, path = "/api/v1/auth/google/login", tag = "auth", operation_id = "auth_google_login", responses((status = 302, description = "Redirect to Google consent")))]
 pub async fn google_login(State(state): State<AppState>) -> Result<Response, ApiError> {
     let login = state.auth.begin_google_login()?;
     let mut headers = HeaderMap::new();
@@ -65,6 +67,7 @@ pub struct OAuthCallback {
 /// GET /api/v1/auth/google/callback — completes the code exchange
 /// server-to-server, provisions Firebase server-side, creates the
 /// ToolFix session, sets HttpOnly cookies, redirects to the frontend.
+#[utoipa::path(get, path = "/api/v1/auth/google/callback", tag = "auth", operation_id = "auth_google_callback", responses((status = 302, description = "Redirect to frontend with session cookies")))]
 pub async fn google_callback(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -114,32 +117,35 @@ pub async fn google_callback(
 
 /// POST /api/v1/auth/refresh — rotates the refresh token and issues a new
 /// access token (both as new cookies).
+#[utoipa::path(post, path = "/api/v1/auth/refresh", tag = "auth", operation_id = "auth_refresh", responses((status = 204)))]
 pub async fn refresh(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Result<StatusCode, ApiError> {
+) -> Result<axum::response::Response, ApiError> {
     let token = read_cookie(&headers, REFRESH_COOKIE)
         .ok_or(AuthError::Unauthenticated)?;
     let session = state.auth.refresh(&token, None, None).await?;
     let mut response = StatusCode::NO_CONTENT.into_response();
     append_cookies(response.headers_mut(), &auth_cookies(state.auth.config(), &session.access_token, &session.refresh_token));
-    Ok(StatusCode::NO_CONTENT)
+    Ok(response)
 }
 
 /// POST /api/v1/auth/logout — revokes the session and clears cookies.
+#[utoipa::path(post, path = "/api/v1/auth/logout", tag = "auth", operation_id = "auth_logout", responses((status = 204)))]
 pub async fn logout(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Result<StatusCode, ApiError> {
+) -> Result<axum::response::Response, ApiError> {
     if let Some(token) = read_cookie(&headers, REFRESH_COOKIE) {
         state.auth.logout(&token).await?;
     }
     let mut response = StatusCode::NO_CONTENT.into_response();
     append_cookies(response.headers_mut(), &clearing_cookies(state.auth.config()));
-    Ok(StatusCode::NO_CONTENT)
+    Ok(response)
 }
 
 /// GET /api/v1/auth/me
+#[utoipa::path(get, path = "/api/v1/auth/me", tag = "auth", operation_id = "auth_me", responses((status = 200, body = AuthMeResponse)))]
 pub async fn me(
     State(state): State<AppState>,
     auth: AuthUser,

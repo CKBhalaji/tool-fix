@@ -54,7 +54,7 @@ export function NearbyRequestsFeed({
     <div className="grid gap-5">
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-secondary">
             {position
               ? `Sharing location (±${Math.round(position.accuracy ?? 0)} m)${
                   lastShare ? ` · last ping ${lastShare}` : ""
@@ -82,7 +82,7 @@ export function NearbyRequestsFeed({
                 label: `${item.distance_km} km`,
               })),
             ]}
-            className="mt-3 h-56 w-full overflow-hidden rounded-xl border border-slate-200"
+            className="mt-3 h-56 w-full overflow-hidden rounded-xl border border-border"
           />
         ) : null}
       </Card>
@@ -91,7 +91,7 @@ export function NearbyRequestsFeed({
 
       {items.length === 0 ? (
         <Card>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             No open requests in your area right now. Stay online — new breakdowns appear here.
           </p>
         </Card>
@@ -102,20 +102,20 @@ export function NearbyRequestsFeed({
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold">{item.problem_description}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
+                  <p className="mt-0.5 text-xs text-muted">
                     {item.distance_km} km away · {item.vehicle_kind ?? "unknown vehicle"}
                     {item.vehicle_symptoms.length ? ` · ${item.vehicle_symptoms.join(", ")}` : ""}
                   </p>
                 </div>
                 {item.price_estimate ? (
-                  <p className="text-sm font-semibold text-slate-700">
+                  <p className="text-sm font-semibold text-foreground">
                     AI est. {formatMinor(item.price_estimate.estimated_cost_min_minor)} –{" "}
                     {formatMinor(item.price_estimate.estimated_cost_max_minor)}
                   </p>
                 ) : null}
               </div>
               {item.diagnosis ? (
-                <p className="mt-2 rounded-lg bg-slate-50 p-2 text-xs text-slate-600">
+                <p className="mt-2 rounded-lg bg-background p-2 text-xs text-secondary">
                   {item.diagnosis.possible_issue} ({(item.diagnosis.confidence * 100).toFixed(0)}% confidence)
                 </p>
               ) : null}

@@ -5,7 +5,7 @@ use axum::Json;
 use crate::{ApiError, AppState};
 use toolfix_auth::AuthUser;
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct NotificationView {
     pub id: uuid::Uuid,
     pub kind: String,
@@ -17,6 +17,7 @@ pub struct NotificationView {
 }
 
 /// GET /api/v1/notifications
+#[utoipa::path(get, path = "/api/v1/notifications", tag = "notifications", operation_id = "notifications_list", responses((status = 200, body = [NotificationView])))]
 pub async fn list_notifications(
     State(state): State<AppState>,
     auth: AuthUser,

@@ -6,7 +6,7 @@ import type { AdminOverview } from "@/services/admin";
 
 export function OverviewCards({ stats }: { stats: AdminOverview | null }) {
   if (!stats) {
-    return <Card><p className="text-sm text-slate-500">Loading stats…</p></Card>;
+    return <Card><p className="text-sm text-muted">Loading stats…</p></Card>;
   }
 
   const cards: { label: string; value: string | number }[] = [

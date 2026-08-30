@@ -22,7 +22,7 @@ export function OfferList({
   if (pending.length === 0 && decided.length === 0) {
     return (
       <Card>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted">
           No offers yet. Mechanics near you are being notified — refresh as bids arrive.
         </p>
         <div className="mt-3">

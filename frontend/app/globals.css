@@ -1,26 +1,109 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (theme set pre-hydration by the inline script). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------
+   ToolFix design tokens — semantic, theme-aware (light default).
+------------------------------------------------------------------ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* surfaces */
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-secondary: #f1f5f9;
+  --border: #e2e8f0;
+
+  /* text */
+  --foreground: #0f172a;
+  --secondary: #475569;
+  --muted: #64748b;
+
+  /* primary — ToolFix Blue (constant brand color) */
+  --primary-light: #dbeafe;
+
+  /* semantic chips: background + text pairs (text lifts for contrast) */
+  --success: #16a34a;
+  --success-light: #dcfce7;
+  --warning: #b45309;
+  --warning-light: #fef3c7;
+  --error: #dc2626;
+  --error-light: #fee2e2;
+  --info: #0284c7;
+  --info-light: #e0f2fe;
+
+  /* dark navy (headers/hero/auth) */
+  --navy: #0f172a;
+  --navy-hover: #1e293b;
 }
 
+.dark {
+  --background: #020617;
+  --surface: #0f172a;
+  --surface-secondary: #1e293b;
+  --border: #334155;
+
+  --foreground: #f8fafc;
+  --secondary: #cbd5e1;
+  --muted: #94a3b8;
+
+  --primary-light: #1e3a8a;
+
+  --success: #4ade80;
+  --success-light: #14532d;
+  --warning: #fbbf24;
+  --warning-light: #451a03;
+  --error: #f87171;
+  --error-light: #450a0a;
+  --info: #38bdf8;
+  --info-light: #0c4a6e;
+
+  --navy: #0f172a;
+  --navy-hover: #1e293b;
+}
+
+/* Map tokens into Tailwind utilities (bg-surface, text-foreground, …).
+   `inline` keeps the var() references so .dark swaps apply automatically. */
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-surface: var(--surface);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-border: var(--border);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-foreground: var(--foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-dark: #1e40af;
+  --color-primary-light: var(--primary-light);
+
+  --color-accent: #f59e0b;
+  --color-accent-hover: #d97706;
+  --color-accent-light: var(--warning-light);
+
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-warning: var(--warning);
+  --color-warning-light: var(--warning-light);
+  --color-error: var(--error);
+  --color-error-light: var(--error-light);
+  --color-info: var(--info);
+  --color-info-light: var(--info-light);
+
+  --color-navy: var(--navy);
+  --color-navy-hover: var(--navy-hover);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Visible focus states (WCAG) */
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }

@@ -18,7 +18,7 @@ export function JobStatusPanel({
   return (
     <Card className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p className="text-xs text-slate-500">Job status (live)</p>
+        <p className="text-xs text-muted">Job status (live)</p>
         {job ? <StatusBadge status={job.status} /> : <p className="text-sm">Loading…</p>}
       </div>
       {job?.status === "repair_completed" && job.final_amount_minor ? (

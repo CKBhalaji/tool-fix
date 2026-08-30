@@ -15,7 +15,7 @@ use toolfix_persistence::models::{BreakdownRow, DiagnosisRow};
 use crate::handlers::jobs::job_response;
 
 /// Combined view returned by GET /api/v1/breakdowns/{id}.
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct BreakdownDetail {
     pub breakdown: BreakdownRowView,
     pub job: JobResponse,
@@ -25,7 +25,7 @@ pub struct BreakdownDetail {
 }
 
 /// Serializable breakdown projection (raw rows are internal).
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct BreakdownRowView {
     pub id: uuid::Uuid,
     pub latitude: f64,
@@ -79,6 +79,7 @@ fn estimate_dto(
 }
 
 /// POST /api/v1/breakdowns
+#[utoipa::path(post, path = "/api/v1/breakdowns", tag = "breakdowns", operation_id = "breakdowns_create", request_body = BreakdownCreateRequest, responses((status = 202, body = JobResponse)))]
 pub async fn create(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -89,6 +90,7 @@ pub async fn create(
 }
 
 /// GET /api/v1/breakdowns/{id}
+#[utoipa::path(get, path = "/api/v1/breakdowns/{id}", tag = "breakdowns", operation_id = "breakdowns_get", params(("id" = Uuid, Path)), responses((status = 200, body = BreakdownDetail)))]
 pub async fn get_one(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -132,6 +134,7 @@ pub async fn get_one(
 }
 
 /// POST /api/v1/breakdowns/{id}/media (multipart photo/video upload)
+#[utoipa::path(post, path = "/api/v1/breakdowns/{id}/media", tag = "breakdowns", operation_id = "breakdowns_upload_media", params(("id" = Uuid, Path)), responses((status = 200, body = [BreakdownMediaResponse])))]
 pub async fn upload_media(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -182,6 +185,7 @@ pub async fn upload_media(
 
 /// GET /api/v1/breakdowns/{id}/media/{media_id}/content — serves stored
 /// bytes through the storage abstraction (local FS first).
+#[utoipa::path(get, path = "/api/v1/breakdowns/{id}/media/{media_id}/content", tag = "breakdowns", operation_id = "breakdowns_download_media", params(("id" = Uuid, Path), ("media_id" = Uuid, Path)), responses((status = 200, description = "Stored bytes")))]
 pub async fn download_media(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -207,6 +211,7 @@ pub async fn download_media(
 }
 
 /// GET /api/v1/breakdowns/{id}/diagnosis — advisory AI output only.
+#[utoipa::path(get, path = "/api/v1/breakdowns/{id}/diagnosis", tag = "breakdowns", operation_id = "breakdowns_diagnosis", params(("id" = Uuid, Path)), responses((status = 200, body = DiagnosisResponse)))]
 pub async fn diagnosis(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -234,6 +239,7 @@ pub async fn diagnosis(
 }
 
 /// POST /api/v1/breakdowns/{id}/cancel
+#[utoipa::path(post, path = "/api/v1/breakdowns/{id}/cancel", tag = "breakdowns", operation_id = "breakdowns_cancel", params(("id" = Uuid, Path)), responses((status = 200, body = JobResponse)))]
 pub async fn cancel(
     State(state): State<AppState>,
     auth: AuthUser,

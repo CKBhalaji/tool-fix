@@ -10,6 +10,7 @@ use crate::handlers::auth::to_user_response;
 
 /// POST /api/v1/users/onboarding — choose CUSTOMER or MECHANIC. The role is
 /// decided server-side; ADMIN is never granted through the API.
+#[utoipa::path(post, path = "/api/v1/users/onboarding", tag = "users", operation_id = "users_onboarding", request_body = OnboardingRequest, responses((status = 200, body = UserResponse)))]
 pub async fn onboarding(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -48,6 +49,7 @@ pub async fn onboarding(
 }
 
 /// GET /api/v1/users/me
+#[utoipa::path(get, path = "/api/v1/users/me", tag = "users", operation_id = "users_get_me", responses((status = 200, body = UserResponse)))]
 pub async fn get_me(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -57,6 +59,7 @@ pub async fn get_me(
 }
 
 /// PATCH /api/v1/users/me
+#[utoipa::path(patch, path = "/api/v1/users/me", tag = "users", operation_id = "users_update_me", request_body = UpdateProfileRequest, responses((status = 200, body = UserResponse)))]
 pub async fn update_me(
     State(state): State<AppState>,
     auth: AuthUser,

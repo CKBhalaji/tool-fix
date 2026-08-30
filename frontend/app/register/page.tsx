@@ -46,13 +46,13 @@ export default function RegisterPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-xl font-bold text-slate-900">Set up your account</h1>
-        <p className="mt-1 text-sm text-slate-600">How will you use ToolFix?</p>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 shadow-sm">
+        <h1 className="text-xl font-bold text-foreground">Set up your account</h1>
+        <p className="mt-1 text-sm text-secondary">How will you use ToolFix?</p>
 
         {!me ? (
           <div className="mt-6">
-            <p className="text-sm text-slate-500">Please sign in first.</p>
+            <p className="text-sm text-muted">Please sign in first.</p>
             <div className="mt-4">
               <SecondaryButton onClick={continueWithGoogle}>Continue with Google</SecondaryButton>
             </div>
@@ -100,13 +100,13 @@ function RoleOption({
   return (
     <label
       className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
-        checked ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:bg-slate-50"
+        checked ? "border-primary bg-primary-light" : "border-border hover:bg-surface-secondary"
       }`}
     >
       <input type="radio" checked={checked} onChange={onChange} className="mt-1" />
       <span>
-        <span className="block font-semibold text-slate-900">{title}</span>
-        <span className="block text-xs text-slate-500">{description}</span>
+        <span className="block font-semibold text-foreground">{title}</span>
+        <span className="block text-xs text-muted">{description}</span>
       </span>
     </label>
   );

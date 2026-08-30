@@ -39,7 +39,7 @@ export function TrackingMap({
     <MapView
       center={breakdown ?? { latitude: 12.9716, longitude: 77.5946 }}
       markers={markers}
-      className="h-72 w-full overflow-hidden rounded-xl border border-slate-200"
+      className="h-72 w-full overflow-hidden rounded-xl border border-border"
     />
   );
 }

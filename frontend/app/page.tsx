@@ -25,7 +25,7 @@ export default function LandingPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center">
-      <p className="text-sm text-slate-500">Loading ToolFix…</p>
+      <p className="text-sm text-muted">Loading ToolFix…</p>
     </main>
   );
 }

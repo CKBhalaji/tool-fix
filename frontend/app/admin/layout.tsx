@@ -27,7 +27,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <>
         <Header title="Admin console" />
-        <main className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading…</main>
+        <main className="flex flex-1 items-center justify-center text-sm text-muted">Loading…</main>
       </>
     );
   }
@@ -56,8 +56,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href}
                 className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition ${
                   active
-                    ? "bg-slate-900 text-white"
-                    : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                    ? "bg-primary text-white"
+                    : "border border-border bg-surface text-secondary hover:bg-surface-secondary"
                 }`}
               >
                 {item.label}

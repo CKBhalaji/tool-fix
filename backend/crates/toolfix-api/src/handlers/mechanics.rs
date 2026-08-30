@@ -4,10 +4,11 @@ use axum::extract::State;
 use axum::Json;
 use crate::{ApiError, AppState};
 use toolfix_auth::{authorization, AuthUser};
+use toolfix_contracts::job::MechanicLocationPing;
 use toolfix_contracts::request::{
     AvailabilityRequest, MechanicOnboardingRequest, MechanicProfileUpdateRequest,
 };
-use toolfix_contracts::response::MechanicProfileResponse;
+use toolfix_contracts::response::{MechanicFeedItem, MechanicProfileResponse};
 use toolfix_persistence::models::MechanicRow;
 
 pub(crate) fn profile_response(
@@ -38,6 +39,7 @@ pub(crate) fn profile_response(
 }
 
 /// GET /api/v1/mechanics/me
+#[utoipa::path(get, path = "/api/v1/mechanics/me", tag = "mechanics", operation_id = "mechanics_get_me", responses((status = 200, body = MechanicProfileResponse)))]
 pub async fn get_me(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -51,6 +53,7 @@ pub async fn get_me(
 
 /// POST /api/v1/mechanics/onboarding — collects the mechanic business
 /// profile (authentication and onboarding are separate concerns).
+#[utoipa::path(post, path = "/api/v1/mechanics/onboarding", tag = "mechanics", operation_id = "mechanics_onboarding", request_body = MechanicOnboardingRequest, responses((status = 200, body = MechanicProfileResponse)))]
 pub async fn onboarding(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -80,6 +83,7 @@ pub async fn onboarding(
 }
 
 /// PATCH /api/v1/mechanics/me
+#[utoipa::path(patch, path = "/api/v1/mechanics/me", tag = "mechanics", operation_id = "mechanics_update_me", request_body = MechanicProfileUpdateRequest, responses((status = 200, body = MechanicProfileResponse)))]
 pub async fn update_me(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -111,6 +115,7 @@ pub async fn update_me(
 }
 
 /// POST /api/v1/mechanics/availability — go online/offline.
+#[utoipa::path(post, path = "/api/v1/mechanics/availability", tag = "mechanics", operation_id = "mechanics_set_availability", request_body = AvailabilityRequest, responses((status = 200, body = MechanicProfileResponse)))]
 pub async fn set_availability(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -129,6 +134,7 @@ pub async fn set_availability(
 }
 
 /// POST /api/v1/mechanics/location — availability pings (no active job).
+#[utoipa::path(post, path = "/api/v1/mechanics/location", tag = "mechanics", operation_id = "mechanics_push_location", request_body = MechanicLocationPing, responses((status = 200)))]
 pub async fn push_location(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -150,6 +156,7 @@ pub async fn push_location(
 }
 
 /// GET /api/v1/mechanics/requests?latitude=..&longitude=.. — nearby feed.
+#[utoipa::path(get, path = "/api/v1/mechanics/requests", tag = "mechanics", operation_id = "mechanics_requests", params(("latitude" = f64, Query, description = "Current latitude"), ("longitude" = f64, Query, description = "Current longitude")), responses((status = 200, body = [MechanicFeedItem])))]
 pub async fn requests(
     State(state): State<AppState>,
     auth: AuthUser,

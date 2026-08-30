@@ -25,7 +25,7 @@ export function ServiceProfileCard({
   return (
     <Card>
       <h2 className="mb-2 font-semibold">Service profile</h2>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         Service area: {profile?.service_area_km ?? 10} km around your shared location.
       </p>
       <div className="mt-3">

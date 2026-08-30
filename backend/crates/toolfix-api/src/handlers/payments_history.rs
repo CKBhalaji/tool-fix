@@ -6,7 +6,7 @@ use serde::Serialize;
 use crate::{ApiError, AppState};
 use toolfix_auth::AuthUser;
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct PaymentView {
     pub payment_id: String,
     pub job_id: String,
@@ -20,6 +20,7 @@ pub struct PaymentView {
 }
 
 /// GET /api/v1/payments — the caller's own payment history.
+#[utoipa::path(get, path = "/api/v1/payments", tag = "payments", operation_id = "payments_my", params(("limit" = i64, Query, description = "Max rows")), responses((status = 200, body = [PaymentView])))]
 pub async fn my_payments(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -51,7 +52,7 @@ pub async fn my_payments(
     ))
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct MechanicPaymentView {
     pub payment_id: String,
     pub job_id: String,
@@ -68,6 +69,7 @@ pub struct MechanicPaymentView {
 
 /// GET /api/v1/mechanics/payments — the signed-in mechanic's incoming
 /// payments (jobs they were selected for), with payment status + receipts.
+#[utoipa::path(get, path = "/api/v1/mechanics/payments", tag = "payments", operation_id = "payments_mechanic_earnings", responses((status = 200, body = [MechanicPaymentView])))]
 pub async fn my_earnings(
     State(state): State<AppState>,
     auth: AuthUser,

@@ -33,7 +33,7 @@ export interface MapViewProps {
 const MapViewImpl = dynamic(() => import("./MapViewImpl"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-500">
+    <div className="flex h-full w-full items-center justify-center rounded-xl bg-surface-secondary text-sm text-muted">
       Loading map…
     </div>
   ),
@@ -41,7 +41,7 @@ const MapViewImpl = dynamic(() => import("./MapViewImpl"), {
 
 export function MapView(props: MapViewProps) {
   return (
-    <div className={props.className ?? "h-72 w-full overflow-hidden rounded-xl border border-slate-200"}>
+    <div className={props.className ?? "h-72 w-full overflow-hidden rounded-xl border border-border"}>
       <MapViewImpl {...props} />
     </div>
   );

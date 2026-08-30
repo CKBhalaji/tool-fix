@@ -28,6 +28,7 @@ fn offer_response(row: OfferRow) -> Result<OfferResponse, ApiError> {
 }
 
 /// POST /api/v1/jobs/{job_id}/offers (mechanic)
+#[utoipa::path(post, path = "/api/v1/jobs/{job_id}/offers", tag = "offers", operation_id = "offers_create", params(("job_id" = Uuid, Path)), request_body = OfferCreateRequest, responses((status = 200, body = OfferResponse)))]
 pub async fn create_offer(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -42,6 +43,7 @@ pub async fn create_offer(
 }
 
 /// GET /api/v1/jobs/{job_id}/offers (customer compares; mechanic sees own)
+#[utoipa::path(get, path = "/api/v1/jobs/{job_id}/offers", tag = "offers", operation_id = "offers_list", params(("job_id" = Uuid, Path)), responses((status = 200, body = [OfferResponse])))]
 pub async fn list_offers(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -62,6 +64,7 @@ pub async fn list_offers(
 }
 
 /// POST /api/v1/offers/{offer_id}/select (customer) — transactional.
+#[utoipa::path(post, path = "/api/v1/offers/{offer_id}/select", tag = "offers", operation_id = "offers_select", params(("offer_id" = Uuid, Path)), responses((status = 200, body = OfferSelectionResponse)))]
 pub async fn select_offer(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -76,6 +79,7 @@ pub async fn select_offer(
 }
 
 /// POST /api/v1/offers/{offer_id}/withdraw (mechanic)
+#[utoipa::path(post, path = "/api/v1/offers/{offer_id}/withdraw", tag = "offers", operation_id = "offers_withdraw", params(("offer_id" = Uuid, Path)), responses((status = 200)))]
 pub async fn withdraw_offer(
     State(state): State<AppState>,
     auth: AuthUser,

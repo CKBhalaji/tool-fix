@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Deserialize)]
 pub struct VehicleCreateRequest {
     pub vehicle_kind: VehicleKind,
     pub make: Option<String>,
@@ -14,7 +14,7 @@ pub struct VehicleCreateRequest {
     pub registration_number: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Deserialize)]
 pub struct VehicleUpdateRequest {
     pub vehicle_kind: Option<VehicleKind>,
     pub make: Option<String>,
@@ -23,7 +23,7 @@ pub struct VehicleUpdateRequest {
     pub registration_number: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize, Deserialize)]
 pub struct VehicleResponse {
     pub id: Uuid,
     pub owner_user_id: Uuid,

@@ -7,7 +7,7 @@ export function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   return (
     <Card>
       <p className="font-semibold capitalize">{vehicle.vehicle_kind}</p>
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-muted">
         {[vehicle.make, vehicle.model, vehicle.year].filter(Boolean).join(" ") || "—"}
       </p>
     </Card>

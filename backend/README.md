@@ -20,6 +20,8 @@ database is created automatically when missing (see `docs/DATABASE.md`).
 
 The API listens on `http://localhost:8080`:
 
+- `GET /swagger-ui` — interactive Swagger UI (OpenAPI 3.1, try-it-out)
+- `GET /api-docs/openapi.json` — the raw OpenAPI document
 - `GET /health/live` — process liveness
 - `GET /health/ready` — checks the database connection
 

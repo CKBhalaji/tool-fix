@@ -9,7 +9,7 @@ export function AgentRunsTable({ runs }: { runs: AdminAgentRun[] }) {
     <Card className="overflow-x-auto">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="text-xs uppercase text-slate-400">
+          <tr className="text-xs uppercase text-muted">
             <th className="py-2 pr-3">Created</th>
             <th className="py-2 pr-3">Kind</th>
             <th className="py-2 pr-3">Provider / model</th>
@@ -20,33 +20,33 @@ export function AgentRunsTable({ runs }: { runs: AdminAgentRun[] }) {
         </thead>
         <tbody>
           {runs.map((run) => (
-            <tr key={run.run_id} className="border-t border-slate-100">
-              <td className="py-2 pr-3 text-xs text-slate-500">
+            <tr key={run.run_id} className="border-t border-border">
+              <td className="py-2 pr-3 text-xs text-muted">
                 {new Date(run.created_at).toLocaleString("en-IN")}
               </td>
               <td className="py-2 pr-3 capitalize">{run.kind.replace(/_/g, " ")}</td>
-              <td className="py-2 pr-3 text-xs text-slate-600">
+              <td className="py-2 pr-3 text-xs text-secondary">
                 {run.provider}
                 <br />
-                <span className="text-slate-400">{run.model ?? "—"}</span>
+                <span className="text-muted">{run.model ?? "—"}</span>
               </td>
               <td className="py-2 pr-3">
                 <span
                   className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     run.status === "succeeded"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
+                      ? "bg-success-light text-success"
+                      : "bg-error-light text-error"
                   }`}
                   title={run.error_message ?? undefined}
                 >
                   {run.status}
                 </span>
               </td>
-              <td className="py-2 pr-3 text-xs text-slate-500">
+              <td className="py-2 pr-3 text-xs text-muted">
                 {run.latency_ms != null ? `${(run.latency_ms / 1000).toFixed(1)}s` : "—"}
               </td>
               <td className="max-w-xs py-2">
-                <p className="truncate text-xs text-slate-600" title={run.problem_description}>
+                <p className="truncate text-xs text-secondary" title={run.problem_description}>
                   {run.problem_description}
                 </p>
               </td>

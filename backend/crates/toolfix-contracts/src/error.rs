@@ -2,13 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ErrorBody {
     pub code: String,
     pub message: String,
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(utoipa::ToSchema, Debug, thiserror::Error)]
 pub enum ContractError {
     #[error("validation failed: {0}")]
     Validation(String),

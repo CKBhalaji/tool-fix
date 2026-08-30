@@ -1,26 +1,42 @@
 import { STATUS_LABELS, type JobStatus } from "@/types";
 
+interface ChipStyle {
+  chip: string;
+  dot: string;
+}
+
+/**
+ * Status chip: color + dot + label (never color alone — accessibility).
+ * Semantic mapping per the design spec:
+ *   blue → in progress, amber → waiting/attention, green → success,
+ *   red → failure, neutral → finished without outcome.
+ */
+const STYLES: Record<JobStatus, ChipStyle> = {
+  created: { chip: "bg-surface-secondary text-secondary", dot: "bg-muted" },
+  analyzing: { chip: "bg-info-light text-info", dot: "bg-info" },
+  mechanics_searching: { chip: "bg-warning-light text-warning", dot: "bg-accent" },
+  mechanics_notified: { chip: "bg-warning-light text-warning", dot: "bg-accent" },
+  offers_received: { chip: "bg-info-light text-info", dot: "bg-info" },
+  mechanic_selected: { chip: "bg-primary-light text-primary", dot: "bg-primary" },
+  mechanic_en_route: { chip: "bg-primary-light text-primary", dot: "bg-primary" },
+  mechanic_arrived: { chip: "bg-info-light text-info", dot: "bg-info" },
+  repair_in_progress: { chip: "bg-warning-light text-warning", dot: "bg-accent" },
+  repair_completed: { chip: "bg-success-light text-success", dot: "bg-success" },
+  payment_pending: { chip: "bg-warning-light text-warning", dot: "bg-accent" },
+  completed: { chip: "bg-success-light text-success", dot: "bg-success" },
+  cancelled: { chip: "bg-surface-secondary text-muted", dot: "bg-muted" },
+  expired: { chip: "bg-surface-secondary text-muted", dot: "bg-muted" },
+  failed: { chip: "bg-error-light text-error", dot: "bg-error" },
+  no_mechanic_available: { chip: "bg-error-light text-error", dot: "bg-error" },
+};
+
 export function StatusBadge({ status }: { status: JobStatus }) {
-  const styles: Record<JobStatus, string> = {
-    created: "bg-slate-100 text-slate-700",
-    analyzing: "bg-violet-100 text-violet-700",
-    mechanics_searching: "bg-amber-100 text-amber-800",
-    mechanics_notified: "bg-amber-100 text-amber-800",
-    offers_received: "bg-sky-100 text-sky-800",
-    mechanic_selected: "bg-blue-100 text-blue-800",
-    mechanic_en_route: "bg-blue-100 text-blue-800",
-    mechanic_arrived: "bg-indigo-100 text-indigo-800",
-    repair_in_progress: "bg-orange-100 text-orange-800",
-    repair_completed: "bg-emerald-100 text-emerald-800",
-    payment_pending: "bg-yellow-100 text-yellow-800",
-    completed: "bg-green-100 text-green-800",
-    cancelled: "bg-slate-200 text-slate-600",
-    expired: "bg-slate-200 text-slate-600",
-    failed: "bg-red-100 text-red-700",
-    no_mechanic_available: "bg-red-100 text-red-700",
-  };
+  const style = STYLES[status];
   return (
-    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status]}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${style.chip}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} aria-hidden="true" />
       {STATUS_LABELS[status]}
     </span>
   );
@@ -28,7 +44,7 @@ export function StatusBadge({ status }: { status: JobStatus }) {
 
 export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}>
+    <div className={`rounded-2xl border border-border bg-surface p-5 shadow-sm ${className}`}>
       {children}
     </div>
   );
@@ -52,7 +68,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -75,7 +91,54 @@ export function SecondaryButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 ${className}`}
+      className={`rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Amber — only for attention-critical actions (e.g. emergency request). */
+export function AccentButton({
+  children,
+  onClick,
+  disabled,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function DestructiveButton({
+  children,
+  onClick,
+  disabled,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-xl bg-error px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-error/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-error focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 ${className}`}
     >
       {children}
     </button>
@@ -85,23 +148,29 @@ export function SecondaryButton({
 export function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
     </Card>
   );
 }
 
 export function ErrorText({ children }: { children: React.ReactNode }) {
   if (!children) return null;
-  return <p className="text-sm text-red-600">{children}</p>;
+  return <p className="text-sm text-error">{children}</p>;
 }
 
 export function Spinner({ label = "Loading…" }: { label?: string }) {
-  return <p className="text-sm text-slate-500">{label}</p>;
+  return (
+    <p className="flex items-center gap-2 text-sm text-muted">
+      <span className="h-3 w-3 animate-spin rounded-full border-2 border-border border-t-primary" aria-hidden="true" />
+      {label}
+    </p>
+  );
 }
 
 export function EmptyState({ message }: { message: string }) {
-  return <p className="py-3 text-sm text-slate-500">{message}</p>;
+  if (!message) return null;
+  return <p className="py-3 text-sm text-muted">{message}</p>;
 }
 
 export function TextInput({
@@ -123,7 +192,7 @@ export function TextInput({
       value={value}
       placeholder={placeholder}
       onChange={(event) => onChange(event.target.value)}
-      className={`rounded-xl border border-slate-300 px-3 py-2.5 text-sm ${className}`}
+      className={`rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
     />
   );
 }

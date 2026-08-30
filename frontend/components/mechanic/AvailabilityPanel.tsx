@@ -19,10 +19,10 @@ export function AvailabilityPanel({
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-slate-900">
+          <p className="text-sm font-semibold text-foreground">
             {profile?.display_name ?? "Mechanic"}
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             {profile?.completed_jobs ?? 0} completed jobs ·{" "}
             {profile?.rating_average ? `★ ${profile.rating_average.toFixed(1)}` : "not yet rated"}
             {profile?.is_verified ? "" : " · verification pending"}
@@ -31,7 +31,7 @@ export function AvailabilityPanel({
         <div className="flex items-center gap-3">
           <span
             className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-              online ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"
+              online ? "bg-success-light text-success" : "bg-surface-secondary text-secondary"
             }`}
           >
             {profile?.availability_status ?? "offline"}
@@ -42,11 +42,11 @@ export function AvailabilityPanel({
         </div>
       </div>
       {profile?.repair_categories.length ? (
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-muted">
           Services: {profile.repair_categories.join(", ")}
         </p>
       ) : (
-        <p className="mt-3 text-xs text-amber-600">
+        <p className="mt-3 text-xs text-warning">
           Set your services in your profile to appear in matching.
         </p>
       )}

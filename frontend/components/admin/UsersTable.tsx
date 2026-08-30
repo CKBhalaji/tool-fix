@@ -25,7 +25,7 @@ export function UsersTable({
             type="button"
             onClick={() => onRoleChange(value)}
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
-              activeRole === value ? "bg-slate-900 text-white" : "border border-slate-300 text-slate-600"
+              activeRole === value ? "bg-navy text-white" : "border border-border text-secondary"
             }`}
           >
             {value || "All"}
@@ -34,7 +34,7 @@ export function UsersTable({
       </div>
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="text-xs uppercase text-slate-400">
+          <tr className="text-xs uppercase text-muted">
             <th className="py-2 pr-3">Email / Name</th>
             <th className="py-2 pr-3">Role</th>
             <th className="py-2 pr-3">Status</th>
@@ -44,24 +44,24 @@ export function UsersTable({
         </thead>
         <tbody>
           {users.map((user) => (
-            <tr key={user.id} className="border-t border-slate-100">
+            <tr key={user.id} className="border-t border-border">
               <td className="py-2 pr-3">
-                <p className="font-medium text-slate-800">{user.email ?? "—"}</p>
-                <p className="text-xs text-slate-500">{user.display_name ?? ""}</p>
+                <p className="font-medium text-foreground">{user.email ?? "—"}</p>
+                <p className="text-xs text-muted">{user.display_name ?? ""}</p>
               </td>
               <td className="py-2 pr-3 capitalize">{user.role}</td>
               <td className="py-2 pr-3">{user.status}</td>
-              <td className="py-2 pr-3 text-xs text-slate-500">
+              <td className="py-2 pr-3 text-xs text-muted">
                 {new Date(user.created_at).toLocaleDateString("en-IN")}
               </td>
               <td className="py-2">
                 {user.role === "admin" ? (
-                  <span className="text-xs text-slate-400">protected</span>
+                  <span className="text-xs text-muted">protected</span>
                 ) : (
                   <button
                     type="button"
                     onClick={() => onToggleStatus(user)}
-                    className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                    className="rounded-lg border border-border px-3 py-1 text-xs font-medium text-secondary hover:bg-surface-secondary"
                   >
                     {user.status === "active" ? "Suspend" : "Activate"}
                   </button>

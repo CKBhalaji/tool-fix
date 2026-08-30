@@ -5,14 +5,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Deserialize)]
 pub struct OfferCreateRequest {
     pub quoted_price_minor: i64,
     pub estimated_arrival_minutes: i32,
     pub message: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct OfferResponse {
     pub id: Uuid,
     pub job_id: Uuid,
@@ -29,7 +29,7 @@ pub struct OfferResponse {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct OfferSelectionResponse {
     pub job: crate::job::JobResponse,
     pub accepted_offer: OfferResponse,

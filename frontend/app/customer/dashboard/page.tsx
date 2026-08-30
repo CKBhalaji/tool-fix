@@ -25,21 +25,21 @@ export default function CustomerDashboardPage() {
     <>
       <Header title="Customer" />
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-        <div className="mb-6 flex flex-col items-start justify-between gap-4 rounded-2xl bg-blue-600 p-6 text-white sm:flex-row sm:items-center">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 rounded-2xl bg-primary p-6 text-white sm:flex-row sm:items-center">
           <div>
             <h1 className="text-2xl font-bold">Need roadside help?</h1>
-            <p className="mt-1 text-sm text-blue-100">
+            <p className="mt-1 text-sm text-blue-50">
               Share your location, describe the problem, and nearby mechanics will bid to help.
             </p>
           </div>
           <Link href="/customer/request">
-            <PrimaryButton className="!bg-white !text-blue-700 hover:!bg-blue-50">
+            <PrimaryButton className="!bg-surface !text-primary hover:!bg-surface-secondary">
               Request assistance
             </PrimaryButton>
           </Link>
         </div>
 
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
           Your vehicles
         </h2>
         <div className="mb-8 grid gap-3 sm:grid-cols-3">
@@ -48,25 +48,25 @@ export default function CustomerDashboardPage() {
               <VehicleCard key={vehicle.id} vehicle={vehicle} />
             ))
           ) : (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted">
               No vehicles yet — you can add one when you request help.
             </p>
           )}
         </div>
 
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
           Assistance history
         </h2>
         <div className="mb-3 flex gap-2">
           <Link
             href="/customer/history"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-secondary hover:bg-surface-secondary"
           >
             Past incidents
           </Link>
           <Link
             href="/customer/payments"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-secondary hover:bg-surface-secondary"
           >
             Payment history
           </Link>

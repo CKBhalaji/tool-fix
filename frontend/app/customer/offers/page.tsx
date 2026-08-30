@@ -46,7 +46,7 @@ function OffersInner() {
   }
 
   if (!jobId) {
-    return <main className="flex flex-1 items-center justify-center text-sm text-slate-500">No job selected.</main>;
+    return <main className="flex flex-1 items-center justify-center text-sm text-muted">No job selected.</main>;
   }
 
   return (
@@ -56,7 +56,7 @@ function OffersInner() {
         {job.data ? (
           <div className="mb-4 flex items-center gap-3">
             <StatusBadge status={job.data.status} />
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-muted">
               {(offers.data ?? []).filter((offer) => offer.status === "pending").length} pending offer(s)
             </span>
           </div>
@@ -71,7 +71,7 @@ function OffersInner() {
           onRefresh={() => setReloadTick((tick) => tick + 1)}
         />
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-muted">
           Offers come from independent mechanics — compare price, rating, and ETA before choosing.
         </p>
       </main>
@@ -81,7 +81,7 @@ function OffersInner() {
 
 export default function OffersPage() {
   return (
-    <Suspense fallback={<main className="flex flex-1 items-center justify-center text-sm text-slate-500">Loading…</main>}>
+    <Suspense fallback={<main className="flex flex-1 items-center justify-center text-sm text-muted">Loading…</main>}>
       <OffersInner />
     </Suspense>
   );

@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct JobResponse {
     pub id: Uuid,
     pub breakdown_id: Uuid,
@@ -20,7 +20,7 @@ pub struct JobResponse {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct JobStatusHistoryEntry {
     pub id: Uuid,
     pub job_id: Uuid,
@@ -32,7 +32,7 @@ pub struct JobStatusHistoryEntry {
 }
 
 /// Event broadcast over the job WebSocket channel.
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct JobEvent {
     pub job_id: Uuid,
     pub kind: String,
@@ -40,7 +40,7 @@ pub struct JobEvent {
     pub at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Deserialize, Serialize)]
 pub struct MechanicLocationPing {
     pub job_id: Option<Uuid>,
     pub latitude: f64,
@@ -48,7 +48,7 @@ pub struct MechanicLocationPing {
     pub accuracy_m: Option<f64>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(utoipa::ToSchema, Debug, Clone, Serialize)]
 pub struct MechanicLocationSample {
     pub latitude: f64,
     pub longitude: f64,

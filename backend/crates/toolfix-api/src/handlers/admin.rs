@@ -13,6 +13,7 @@ use toolfix_contracts::response::{LoggedInResponse, MechanicProfileResponse};
 use toolfix_persistence::models::{AdminJobRow, UserRow};
 
 /// POST /api/v1/admin/login — static credentials → ADMIN session cookies.
+#[utoipa::path(post, path = "/api/v1/admin/login", tag = "admin", operation_id = "admin_login", request_body = AdminLoginRequest, responses((status = 200, body = LoggedInResponse)))]
 pub async fn login(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -55,7 +56,7 @@ pub async fn login(
     Ok(response)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct AdminLoginRequest {
     pub email: String,
     pub password: String,
@@ -67,15 +68,46 @@ fn require_admin(auth: &AuthUser) -> Result<(), ApiError> {
 }
 
 /// GET /api/v1/admin/overview
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct AdminOverviewView {
+    pub users_total: i64,
+    pub customers: i64,
+    pub mechanics: i64,
+    pub admins: i64,
+    pub jobs_total: i64,
+    pub jobs_active: i64,
+    pub jobs_completed: i64,
+    pub offers_total: i64,
+    pub mechanics_verified: i64,
+    pub payments_collected_minor: i64,
+    pub payments_count: i64,
+    pub ai_runs_total: i64,
+}
+
+#[utoipa::path(get, path = "/api/v1/admin/overview", tag = "admin", operation_id = "admin_overview", responses((status = 200, body = AdminOverviewView)))]
 pub async fn overview(
     State(state): State<AppState>,
     auth: AuthUser,
-) -> Result<Json<toolfix_persistence::models::OverviewRow>, ApiError> {
+) -> Result<Json<AdminOverviewView>, ApiError> {
     require_admin(&auth)?;
-    Ok(Json(state.repos.admin_overview().await?))
+    let row = state.repos.admin_overview().await?;
+    Ok(Json(AdminOverviewView {
+        users_total: row.users_total,
+        customers: row.customers,
+        mechanics: row.mechanics,
+        admins: row.admins,
+        jobs_total: row.jobs_total,
+        jobs_active: row.jobs_active,
+        jobs_completed: row.jobs_completed,
+        offers_total: row.offers_total,
+        mechanics_verified: row.mechanics_verified,
+        payments_collected_minor: row.payments_collected_minor,
+        payments_count: row.payments_count,
+        ai_runs_total: row.ai_runs_total,
+    }))
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct AdminUserView {
     pub id: String,
     pub email: Option<String>,
@@ -101,6 +133,7 @@ fn user_view(row: UserRow) -> Result<AdminUserView, ApiError> {
 }
 
 /// GET /api/v1/admin/users?role=customer|mechanic|admin&limit=200
+#[utoipa::path(get, path = "/api/v1/admin/users", tag = "admin", operation_id = "admin_users", params(("role" = String, Query, description = "Filter by role"), ("limit" = i64, Query, description = "Max rows")), responses((status = 200, body = [AdminUserView])))]
 pub async fn users(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -119,12 +152,13 @@ pub async fn users(
         .map(Json)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct SetStatusRequest {
     pub status: String,
 }
 
 /// POST /api/v1/admin/users/{id}/status { status: active|suspended|deleted }
+#[utoipa::path(post, path = "/api/v1/admin/users/{user_id}/status", tag = "admin", operation_id = "admin_set_user_status", params(("user_id" = Uuid, Path)), request_body = SetStatusRequest, responses((status = 204)))]
 pub async fn set_user_status(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -139,6 +173,7 @@ pub async fn set_user_status(
 }
 
 /// GET /api/v1/admin/mechanics
+#[utoipa::path(get, path = "/api/v1/admin/mechanics", tag = "admin", operation_id = "admin_mechanics", responses((status = 200, body = [MechanicProfileResponse])))]
 pub async fn mechanics(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -153,12 +188,13 @@ pub async fn mechanics(
     Ok(Json(profiles))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct VerifyRequest {
     pub verified: bool,
 }
 
 /// POST /api/v1/admin/mechanics/{id}/verify { verified: bool }
+#[utoipa::path(post, path = "/api/v1/admin/mechanics/{mechanic_id}/verify", tag = "admin", operation_id = "admin_verify_mechanic", params(("mechanic_id" = Uuid, Path)), request_body = VerifyRequest, responses((status = 204)))]
 pub async fn verify_mechanic(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -174,7 +210,7 @@ pub async fn verify_mechanic(
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct AdminJobView {
     pub job_id: String,
     pub status: toolfix_contracts::JobStatus,
@@ -208,6 +244,7 @@ fn job_view(row: AdminJobRow) -> Result<AdminJobView, ApiError> {
 }
 
 /// GET /api/v1/admin/jobs?limit=200
+#[utoipa::path(get, path = "/api/v1/admin/jobs", tag = "admin", operation_id = "admin_jobs", params(("limit" = i64, Query)), responses((status = 200, body = [AdminJobView])))]
 pub async fn jobs(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -230,6 +267,7 @@ pub async fn jobs(
 }
 
 /// GET /api/v1/admin/payments?limit=200
+#[utoipa::path(get, path = "/api/v1/admin/payments", tag = "admin", operation_id = "admin_payments", params(("limit" = i64, Query)), responses((status = 200, body = [AdminPaymentView])))]
 pub async fn payments(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -251,7 +289,7 @@ pub async fn payments(
         .map(Json)
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct AdminPaymentView {
     pub payment_id: String,
     pub job_id: String,
@@ -285,6 +323,7 @@ fn payment_view(row: toolfix_persistence::models::AdminPaymentRow) -> Result<Adm
 }
 
 /// GET /api/v1/admin/agent-runs?limit=200 — the AI usage table.
+#[utoipa::path(get, path = "/api/v1/admin/agent-runs", tag = "admin", operation_id = "admin_agent_runs", params(("limit" = i64, Query)), responses((status = 200, body = [AgentRunView])))]
 pub async fn agent_runs(
     State(state): State<AppState>,
     auth: AuthUser,
@@ -320,7 +359,7 @@ pub async fn agent_runs(
         .map(Json)
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct AgentRunView {
     pub run_id: String,
     pub breakdown_id: String,
