@@ -1,0 +1,105 @@
+name: Backend release
+
+# Builds version-compatible packages for Windows and Linux.
+# - PRs targeting dev: bundles attached as workflow artifacts (run page).
+# - Pushes to dev (merges): rolling "dev" GitHub pre-release with both assets.
+
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+concurrency:
+  group: backend-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package toolfix-server (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: bundle-windows
+          - os: ubuntu-latest
+            artifact: bundle-linux
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Build release binary
+        run: cargo build --release --locked -p toolfix-server
+
+      - name: Bundle (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $meta = & cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
+          $version = ($meta.packages | Where-Object { $_.name -eq 'toolfix-server' }).version
+          $shortSha = "${{ github.sha }}".Substring(0, 7)
+          $name = "toolfix-server-$version-$shortSha-windows-x86_64"
+          New-Item -ItemType Directory -Path "bundle/$name" -Force | Out-Null
+          Copy-Item target/release/toolfix-server.exe "bundle/$name/"
+          Copy-Item DEPLOYMENT.md "bundle/$name/README.md"
+          Copy-Item .env.example "bundle/$name/"
+          Compress-Archive -Path "bundle/$name" -DestinationPath "$name.zip"
+          "bundle_name=$name.zip" >> $env:GITHUB_ENV
+
+      - name: Bundle (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.name=="toolfix-server") | .version')
+          shortsha="${GITHUB_SHA::7}"
+          name="toolfix-server-$version-$shortsha-linux-x86_64"
+          mkdir -p "bundle/$name"
+          cp target/release/toolfix-server "bundle/$name/"
+          cp DEPLOYMENT.md "bundle/$name/README.md"
+          cp .env.example "bundle/$name/"
+          tar -czf "$name.tar.gz" -C bundle "$name"
+          echo "bundle_name=$name.tar.gz" >> "$GITHUB_ENV"
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: backend/${{ env.bundle_name }}
+          retention-days: 14
+
+  release:
+    name: Publish dev pre-release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: [package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bundle-*
+          merge-multiple: true
+          path: dist
+
+      - name: Recreate rolling dev pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete dev --cleanup-tag -y 2>/dev/null || true
+          git push origin :refs/tags/dev 2>/dev/null || true
+          gh release create dev dist/* \
+            --prerelease \
+            --title "dev build (${GITHUB_SHA::7})" \
+            --notes "Automated build from commit ${GITHUB_SHA::7}. Contains the Windows zip and the Linux tar.gz; see README.md inside each bundle for run instructions."

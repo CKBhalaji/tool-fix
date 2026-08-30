@@ -2,6 +2,7 @@
 
 - [Backend README](../backend/README.md) — workspace, crates, commands
 - [Frontend README](../frontend/README.md) — Next.js setup and structure
+- [Rust learning handbook](../backend/docs/LEARNING.md)
 - [Backend architecture](../backend/docs/ARCHITECTURE.md)
 - [Authentication (authoritative)](../backend/docs/AUTHENTICATION.md)
 - [API reference](../backend/docs/API.md)
